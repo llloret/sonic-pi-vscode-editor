@@ -1,0 +1,129 @@
+{
+	"name": "sonicpieditor",
+	"publisher": "Luis Lloret",
+	"displayName": "SonicPiEditor",
+	"description": "An editor for Sonic Pi",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.45.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:ruby"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "sonicpieditor.run",
+				"title": "Run",
+				"category": "Sonic Pi"
+			},
+			{
+				"command": "sonicpieditor.stop",
+				"title": "Stop",
+				"category": "Sonic Pi"
+			},
+			{
+				"command": "sonicpieditor.togglerecording",
+				"title": "Toggle recording",
+				"category": "Sonic Pi"
+			}
+		],
+		"menus": {
+			"editor/title": [
+				{
+					"command": "sonicpieditor.togglerecording"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "sonicpieditor.run",
+				"key": "alt+r",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "sonicpieditor.stop",
+				"key": "alt+s"
+			},
+			{
+				"command": "sonicpieditor.togglerecording",
+				"key": "shift+alt+r"
+			}
+		],
+		"snippets": [
+			{
+				"language": "ruby",
+				"path": "./snippets/sonic-pi-snippets.json"
+			}
+		],
+		"configuration": {
+			"title": "Sonic Pi",
+			"properties": {
+				"sonicpieditor.invertStereo": {
+					"type": "boolean",
+					"default": false,
+					"description": "Invert stereo"
+				},
+				"sonicpieditor.forceMono": {
+					"type": "boolean",
+					"default": false,
+					"description": "Force mono output"
+				},
+				"sonicpieditor.safeMode": {
+					"type": "boolean",
+					"default": true,
+					"description": "Synth argument checking functions"
+				},
+				"sonicpieditor.logSynths": {
+					"type": "boolean",
+					"default": true,
+					"description": "Log the synths"
+				},
+				"sonicpieditor.logCues": {
+					"type": "boolean",
+					"default": true,
+					"description": "Log the cues"
+				},
+				"sonicpieditor.logAutoscroll": {
+					"type": "boolean",
+					"default": true,
+					"description": "Autoscroll the log"
+				},
+				"sonicpieditor.logClearOnRun": {
+					"type": "boolean",
+					"default": true,
+					"description": "Clear the log when executing a run"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint src --ext ts",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^7.0.2",
+		"@types/node": "^13.13.9",
+		"@types/vscode": "^1.45.0",
+		"@typescript-eslint/eslint-plugin": "^2.30.0",
+		"@typescript-eslint/parser": "^2.30.0",
+		"eslint": "^6.8.0",
+		"glob": "^7.1.6",
+		"mocha": "^7.1.2",
+		"typescript": "^3.8.3",
+		"vscode-test": "^1.3.0"
+	},
+	"dependencies": {
+		"osc-js": "2.1.0",
+		"uuid": "8.1.0"
+	}
+}

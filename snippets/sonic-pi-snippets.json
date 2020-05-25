@@ -1,0 +1,7 @@
+{
+  "live_loop": {
+    "scope": "ruby",
+    "prefix": ["live_loop", "ll"],
+    "body": "live_loop ${1::foo} do\n${2:what}\n${3:sleep 1}\nend"
+  }
+}
