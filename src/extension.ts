@@ -40,7 +40,9 @@ export function activate(context: vscode.ExtensionContext) {
 	// create an uuid for the editor
 	let guiUuid = uuidv4();
 
-	// Initialise the Sonic Pi sercer
+	// Initialise the Sonic Pi server
+	vscode.window.setStatusBarMessage("Starting Sonic Pi server");
+	vscode.window.showInformationMessage("Starting Sonic Pi server");
 	let main = new Main();
 	main.initAndCheckPorts();
 	main.startRubyServer();
@@ -49,11 +51,23 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Register the editor commands. For now, run, stop and recording. Those should be enough for
 	// some initial fun...
-	let disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {
-		// FIXME: fixed workspace, should be something different
-		let filename = 'workspace_nine'; //textEditor.document.fileName;
-		let code = textEditor.document.getText();
-		var message = new OSC.Message('/save-and-run-buffer', guiUuid, filename, code, filename);
+	let disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {		
+		let doc = textEditor.document;
+		// If the focus is on something that is not ruby (i.e. something on the output pane), 
+		// run the first found open ruby editor instead
+		if (doc.languageId !== 'ruby'){
+			let textEditors = vscode.window.visibleTextEditors;
+			let rubyEditors = textEditors.filter((editor) => {
+				return editor.document.languageId === 'ruby';
+			});
+
+			if (!rubyEditors.length){
+				return;
+			}
+			doc = rubyEditors[0].document;
+		}
+		let code = doc.getText();
+		var message = new OSC.Message('/run-code', guiUuid, code);
 		main.sendOsc(message);
 	});
 

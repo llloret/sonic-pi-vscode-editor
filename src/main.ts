@@ -176,6 +176,10 @@ export class Main {
             this.processMultiMessage(message);            
         });
 
+/*        osc.on('*', (message: {address: string}) => {
+            console.log("Got message of type: " + message.address);
+        });
+*/
     }
       
     // Process an incoming multi-message
@@ -284,6 +288,10 @@ export class Main {
         ruby_server.stdout.on('data', (data: any) => {
             console.log(`stdout: ${data}`);
             this.log(`stdout: ${data}`);
+            if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)){
+                vscode.window.setStatusBarMessage("Sonic Pi server started");
+                vscode.window.showInformationMessage("Sonic Pi server started");
+            }
 
           });
           

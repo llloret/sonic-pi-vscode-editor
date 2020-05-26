@@ -42,16 +42,19 @@
 		"keybindings": [
 			{
 				"command": "sonicpieditor.run",
-				"key": "alt+r",
+				"key": "alt+r",				
+				"mac": "cmd+r",
 				"when": "editorTextFocus"
 			},
 			{
 				"command": "sonicpieditor.stop",
-				"key": "alt+s"
+				"key": "alt+s",
+				"mac": "cmd+s"
 			},
 			{
 				"command": "sonicpieditor.togglerecording",
-				"key": "shift+alt+r"
+				"key": "shift+alt+r",
+				"mac": "shift+cmd+r"
 			}
 		],
 		"snippets": [
