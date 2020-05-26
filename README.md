@@ -10,8 +10,8 @@ on how to run it.
 
 This is just starting, so there are not many features yet, but enough to have some fun!
 - Will launch Sonic Pi backend when opening a ruby file
-- Can run code pressing Alt-R (just like in Sonic Pi's editor) or with command palette "Sonic Pi: Run" (see [Screenshot](image/command-palette.png))
-- Can stop running audio with Alt-S or "Sonic Pi: Stop"
+- Can run code pressing Alt-R (or Cmd-R on Mac, just like in Sonic Pi's editor) or with command palette "Sonic Pi: Run" (see [Screenshot](image/command-palette.png))
+- Can stop running audio with Alt-S (or Cmd-S on Mac) or "Sonic Pi: Stop"
 - Shows logs and cues in the output panel (see [logs](image/output-pane.png) and [cues](image/output-pane-cues.png))
 - Some basic snippets (well, just one for now - as a test): live_loop. Will add more shortly. See snippets directory
 - And of course, you have syntax highlighting, autoformatting, all the goodies that you usually have with vscode!
@@ -38,7 +38,7 @@ be automated in the future.
 
 ## Known Issues
 
-I have not tested this in Linux or Mac yet. Works nicely in Windows.
+I have not tested this in Linux yet. Works nicely in Windows and Mac.
 
 
 ## Open questions

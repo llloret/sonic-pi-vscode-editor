@@ -3,5 +3,89 @@
     "scope": "ruby",
     "prefix": ["live_loop", "ll"],
     "body": "live_loop ${1::foo} do\n${2:what}\n${3:sleep 1}\nend"
+  },
+
+  "fx generic": {
+    "scope": "ruby",
+    "prefix": ["fx"],
+    "body": "with_fx :${1:effect} do\n\t$2\nend"
+  },
+
+  "fx autotuner": {
+    "scope": "ruby",
+    "prefix": ["fx a"],
+    "body": "with_fx :autotuner do\n\t$1\nend"
+  },
+
+  "fx bitcrusher": {
+    "scope": "ruby",
+    "prefix": ["fx b"],
+    "body": "with_fx :bitcrusher do\n\t$1\nend"
+  },
+
+  "fx compressor": {
+    "scope": "ruby",
+    "prefix": ["fx c"],
+    "body": "with_fx :compressor do\n\t$1\nend"
+  },
+
+  "fx distortion": {
+    "scope": "ruby",
+    "prefix": ["fx d"],
+    "body": "with_fx :distortion do\n\t$1\nend"
+  },
+
+  "fx flanger": {
+    "scope": "ruby",
+    "prefix": ["fx f"],
+    "body": "with_fx :flanger do\n\t$1\nend"
+  },
+
+  "fx echo": {
+    "scope": "ruby",
+    "prefix": ["fx e"],
+    "body": "with_fx :echo do\n\t$1\nend"
+  },
+
+  "fx krush": {
+    "scope": "ruby",
+    "prefix": ["fx k"],
+    "body": "with_fx :krush do\n\t$1\nend"
+  },
+
+  "fx ping_pong": {
+    "scope": "ruby",
+    "prefix": ["fx p"],
+    "body": "with_fx :ping_pong do\n\t$1\nend"
+  },
+
+  "fx reverb": {
+    "scope": "ruby",
+    "prefix": ["fx r"],
+    "body": "with_fx :reverb do\n\t$1\nend"
+  },
+
+  "fx ringmod": {
+    "scope": "ruby",
+    "prefix": ["fx rm"],
+    "body": "with_fx :ring_mod do\n\t$1\nend"
+  },
+
+  "fx slicer": {
+    "scope": "ruby",
+    "prefix": ["fx s"],
+    "body": "with_fx :slicer do\n\t$1\nend"
+  },
+
+  "fx tremolo": {
+    "scope": "ruby",
+    "prefix": ["fx t"],
+    "body": "with_fx :tremolo do\n\t$1\nend"
+  },
+
+  "fx wobble": {
+    "scope": "ruby",
+    "prefix": ["fx w"],
+    "body": "with_fx :wobble do\n\t$1\nend"
   }
 }
