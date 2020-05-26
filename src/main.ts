@@ -198,15 +198,15 @@ export class Main {
             let str = message.args[4 + 1 + (2*i)];
             let lines = str.split(/\r?\n/);
             if (!str){
-                toShow += " |";
+                toShow = " |";
             }
             else if (i === (count - 1)){
-                toShow += " └─ ";
+                toShow = " └─ ";
             }
             else{
-                toShow += " ├─ ";
+                toShow = " ├─ ";
             }
-            this.logOutput.appendLine(toShow);
+            this.logOutput.append(toShow);
 
             lines.forEach((line: string) => {
                 this.logOutput.appendLine(line);
