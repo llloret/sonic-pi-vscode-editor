@@ -29,9 +29,9 @@ export class OscSender {
     private osc: any;
     constructor(){
         this.osc = new OSC({
-			plugin: new OSC.DatagramPlugin({ send: { port: 51235, host: '127.0.0.1' } })
+            plugin: new OSC.DatagramPlugin({ send: { port: 51235, host: '127.0.0.1' } })
         });
-		this.osc.open();
+        this.osc.open();
     }
 
     send(msg: any){

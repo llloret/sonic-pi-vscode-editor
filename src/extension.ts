@@ -35,58 +35,58 @@ const OSC = require('osc-js');
 import { Main } from './main';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Ruby detected. Sonic Pi editor extension active!');
+    console.log('Ruby detected. Sonic Pi editor extension active!');
 
-	// create an uuid for the editor
-	let guiUuid = uuidv4();
+    // create an uuid for the editor
+    let guiUuid = uuidv4();
 
-	let main = new Main();
-	let config = vscode.workspace.getConfiguration('sonicpieditor');
-	if (config.launchSonicPiServerAutomatically === 'always'){
-		main.startServer();
-	}
+    let main = new Main();
+    let config = vscode.workspace.getConfiguration('sonicpieditor');
+    if (config.launchSonicPiServerAutomatically === 'always'){
+        main.startServer();
+    }
 
-	let isRecording = false;
-	
-	// Register the editor commands. For now, run, stop and recording. Those should be enough for
-	// some initial fun...
-	let disposable = vscode.commands.registerCommand('sonicpieditor.startserver', () => {		
-		main.startServer();
-	});
+    let isRecording = false;
+    
+    // Register the editor commands. For now, run, stop and recording. Those should be enough for
+    // some initial fun...
+    let disposable = vscode.commands.registerCommand('sonicpieditor.startserver', () => {		
+        main.startServer();
+    });
 
-	disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {		
-		let doc = textEditor.document;
-		// If the focus is on something that is not ruby (i.e. something on the output pane), 
-		// run the first found open ruby editor instead
-		if (doc.languageId !== 'ruby'){
-			let textEditors = vscode.window.visibleTextEditors;
-			let rubyEditors = textEditors.filter((editor) => {
-				return editor.document.languageId === 'ruby';
-			});
+    disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {		
+        let doc = textEditor.document;
+        // If the focus is on something that is not ruby (i.e. something on the output pane), 
+        // run the first found open ruby editor instead
+        if (doc.languageId !== 'ruby'){
+            let textEditors = vscode.window.visibleTextEditors;
+            let rubyEditors = textEditors.filter((editor) => {
+                return editor.document.languageId === 'ruby';
+            });
 
-			if (!rubyEditors.length){
-				return;
-			}
-			doc = rubyEditors[0].document;
-		}
-		let code = doc.getText();
-		var message = new OSC.Message('/run-code', guiUuid, code);
-		main.sendOsc(message);
-	});
+            if (!rubyEditors.length){
+                return;
+            }
+            doc = rubyEditors[0].document;
+        }
+        let code = doc.getText();
+        var message = new OSC.Message('/run-code', guiUuid, code);
+        main.sendOsc(message);
+    });
 
-	disposable = vscode.commands.registerCommand('sonicpieditor.stop', () => {
-		var message = new OSC.Message('/stop-all-jobs', guiUuid);
-		main.sendOsc(message);
-	});
+    disposable = vscode.commands.registerCommand('sonicpieditor.stop', () => {
+        var message = new OSC.Message('/stop-all-jobs', guiUuid);
+        main.sendOsc(message);
+    });
 
-	disposable = vscode.commands.registerCommand('sonicpieditor.togglerecording', () => {
-		isRecording = !isRecording;
-		if (isRecording){
-			var message = new OSC.Message('/start-recording', guiUuid);
-			main.sendOsc(message);
+    disposable = vscode.commands.registerCommand('sonicpieditor.togglerecording', () => {
+        isRecording = !isRecording;
+        if (isRecording){
+            var message = new OSC.Message('/start-recording', guiUuid);
+            main.sendOsc(message);
         }
         else{
-			var message = new OSC.Message('/stop-recording', guiUuid);
+            var message = new OSC.Message('/stop-recording', guiUuid);
             main.sendOsc(message);
             vscode.window.showSaveDialog({filters: {'Wave file': ['wav']}}).then(uri => {
                 if (uri){
@@ -99,9 +99,9 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             });
         }
-	});
+    });
 
-	context.subscriptions.push(disposable);
+    context.subscriptions.push(disposable);
 }
 
 // this method is called when your extension is deactivated

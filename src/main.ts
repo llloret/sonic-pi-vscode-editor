@@ -180,9 +180,9 @@ export class Main {
 
     startServer(){
         if (!this.serverStarted){
-           	// Initialise the Sonic Pi server
-        	vscode.window.setStatusBarMessage("Starting Sonic Pi server");
-	        vscode.window.showInformationMessage("Starting Sonic Pi server");
+               // Initialise the Sonic Pi server
+            vscode.window.setStatusBarMessage("Starting Sonic Pi server");
+            vscode.window.showInformationMessage("Starting Sonic Pi server");
             this.initAndCheckPorts();
             this.startRubyServer();    
             this.serverStarted = true;
@@ -208,7 +208,7 @@ export class Main {
     // This is where the incoming OSC messages are processed
     setupOscReceiver(){
         let osc = new OSC({
-			plugin: new OSC.DatagramPlugin({ open: { port: 51236, host: '127.0.0.1' } })
+            plugin: new OSC.DatagramPlugin({ open: { port: 51236, host: '127.0.0.1' } })
         });
         osc.open();
         osc.on('/log/info', (message: { args: any; }) => {
