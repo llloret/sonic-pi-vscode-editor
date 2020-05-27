@@ -2,90 +2,143 @@
   "live_loop": {
     "scope": "ruby",
     "prefix": ["live_loop", "ll"],
-    "body": "live_loop ${1::foo} do\n${2:what}\n${3:sleep 1}\nend"
+    "body": "live_loop :${1:foo} do\n${2:what}\n${3:sleep 1}\nend"
   },
 
-  "fx generic": {
+  "synth": {
     "scope": "ruby",
-    "prefix": ["fx"],
-    "body": "with_fx :${1:effect} do\n\t$2\nend"
+    "prefix": ["us", "use_synth"],
+    "body": "use_synth :${1|beep,blade,bnoise,chipbass,chiplead,chipnoise,cnoise,dark_ambience,dpulse,dsaw,dtri,dull_bell,fm,gnoise,growl,hollow,hoover,mod_beep,mod_dsaw,mod_fm,mod_pulse,mod_saw,mod_sine,mod_tri,noise,piano,pluck,pnoise,pretty_bell,prophet,pulse,saw,sine,sound_in,sound_in_stereo,square,subpulse,supersaw,tb303,tech_saws,tri,zawa|}"
   },
 
+  "synth beep": {
+    "scope": "ruby",
+    "prefix": ["us b"],
+    "body": "use_synth :beep"
+  },
+  "synth chipbass": {
+    "scope": "ruby",
+    "prefix": ["us c"],
+    "body": "use_synth :chipbass"
+  },
+  "synth dark_ambience": {
+    "scope": "ruby",
+    "prefix": ["us d"],
+    "body": "use_synth :dark_ambience"
+  },
+  "synth fm": {
+    "scope": "ruby",
+    "prefix": ["us f"],
+    "body": "use_synth :fm"
+  },
+  "synth growl": {
+    "scope": "ruby",
+    "prefix": ["us g"],
+    "body": "use_synth :growl"
+  },
+  "synth hoover": {
+    "scope": "ruby",
+    "prefix": ["us h"],
+    "body": "use_synth :beep"
+  },
+  "synth noise": {
+    "scope": "ruby",
+    "prefix": ["us n"],
+    "body": "use_synth :noise"
+  },
+  "synth piano": {
+    "scope": "ruby",
+    "prefix": ["us p"],
+    "body": "use_synth :piano"
+  },
+  "synth saw": {
+    "scope": "ruby",
+    "prefix": ["us s"],
+    "body": "use_synth :saw"
+  },
+  "synth tb303": {
+    "scope": "ruby",
+    "prefix": ["us t"],
+    "body": "use_synth :tb303"
+  },
+  "synth zawa": {
+    "scope": "ruby",
+    "prefix": ["us z"],
+    "body": "use_synth :zawa"
+  },
+  "fx": {
+    "scope": "ruby",
+    "prefix": ["fx", "with_fx"],
+    "body": "with_fx :${1|autotuner,band_eq,bitcrusher,bpf,compressor,distortion,echo,eq,flanger,gverb,hpf,ixi_techno,krush,level,lpf,mono,nbpf,nhpf,nlpf,normaliser,nrbpf,nrhpf,nrlpf,octaver,pan,panslicer,ping_pong,pitch_shift,rbpf,record,reverb,rhpf,ring_mod,rlpf,slicer,sound_out,sound_out_stereo,tanh,tremolo,vowel,whammy,wobble|} do\n\t${2:play 50\n\tsleep 1}\nend"
+  },
   "fx autotuner": {
     "scope": "ruby",
     "prefix": ["fx a"],
     "body": "with_fx :autotuner do\n\t$1\nend"
   },
-
   "fx bitcrusher": {
     "scope": "ruby",
     "prefix": ["fx b"],
     "body": "with_fx :bitcrusher do\n\t$1\nend"
   },
-
   "fx compressor": {
     "scope": "ruby",
     "prefix": ["fx c"],
     "body": "with_fx :compressor do\n\t$1\nend"
   },
-
   "fx distortion": {
     "scope": "ruby",
     "prefix": ["fx d"],
     "body": "with_fx :distortion do\n\t$1\nend"
   },
-
   "fx flanger": {
     "scope": "ruby",
     "prefix": ["fx f"],
     "body": "with_fx :flanger do\n\t$1\nend"
   },
-
   "fx echo": {
     "scope": "ruby",
     "prefix": ["fx e"],
     "body": "with_fx :echo do\n\t$1\nend"
   },
-
   "fx krush": {
     "scope": "ruby",
     "prefix": ["fx k"],
     "body": "with_fx :krush do\n\t$1\nend"
   },
-
   "fx ping_pong": {
     "scope": "ruby",
     "prefix": ["fx p"],
     "body": "with_fx :ping_pong do\n\t$1\nend"
   },
-
   "fx reverb": {
     "scope": "ruby",
     "prefix": ["fx r"],
     "body": "with_fx :reverb do\n\t$1\nend"
   },
-
   "fx ringmod": {
     "scope": "ruby",
     "prefix": ["fx rm"],
     "body": "with_fx :ring_mod do\n\t$1\nend"
   },
-
   "fx slicer": {
     "scope": "ruby",
     "prefix": ["fx s"],
     "body": "with_fx :slicer do\n\t$1\nend"
   },
-
   "fx tremolo": {
     "scope": "ruby",
     "prefix": ["fx t"],
     "body": "with_fx :tremolo do\n\t$1\nend"
   },
-
   "fx wobble": {
     "scope": "ruby",
     "prefix": ["fx w"],
     "body": "with_fx :wobble do\n\t$1\nend"
+  },
+  "sa": {
+    "scope": "ruby",
+    "prefix": ["sa", "sample"],
+    "body": "sample :${1|ambi_soft_buzz,ambi_swoosh,ambi_drone,ambi_glass_hum,ambi_glass_rub,ambi_haunted_hum,ambi_piano,ambi_lunar_land,ambi_dark_woosh,ambi_choir,ambi_sauna,bd_ada,bd_pure,bd_808,bd_zum,bd_gas,bd_sone,bd_haus,bd_zome,bd_boom,bd_klub,bd_fat,bd_tek,bd_mehackit,bass_hit_c,bass_hard_c,bass_thick_c,bass_drop_c,bass_woodsy_c,bass_voxy_c,bass_voxy_hit_c,bass_dnb_f,drum_heavy_kick,drum_tom_mid_soft,drum_tom_mid_hard,drum_tom_lo_soft,drum_tom_lo_hard,drum_tom_hi_soft,drum_tom_hi_hard,drum_splash_soft,drum_splash_hard,drum_snare_soft,drum_snare_hard,drum_cymbal_soft,drum_cymbal_hard,drum_cymbal_open,drum_cymbal_closed,drum_cymbal_pedal,drum_bass_soft,drum_bass_hard,drum_cowbell,drum_roll,elec_triangle,elec_snare,elec_lo_snare,elec_hi_snare,elec_mid_snare,elec_cymbal,elec_soft_kick,elec_filt_snare,elec_fuzz_tom,elec_chime,elec_bong,elec_twang,elec_wood,elec_pop,elec_beep,elec_blip,elec_blip2,elec_ping,elec_bell,elec_flip,elec_tick,elec_hollow_kick,elec_twip,elec_plip,elec_blup,glitch_bass_g,glitch_perc1,glitch_perc2,glitch_perc3,glitch_perc4,glitch_perc5,glitch_robot1,glitch_robot2,mehackit_phone1,mehackit_phone2,mehackit_phone3,mehackit_phone4,mehackit_robot1,mehackit_robot2,mehackit_robot3,mehackit_robot4,mehackit_robot5,mehackit_robot6,mehackit_robot7,misc_burp,misc_crow,misc_cineboom,perc_bell,perc_bell2,perc_snap,perc_snap2,perc_swash,perc_till,perc_door,perc_impact1,perc_impact2,perc_swoosh,sn_dub,sn_dolf,sn_zome,sn_generic,guit_harmonics,guit_e_fifths,guit_e_slide,guit_em9,loop_industrial,loop_compus,loop_amen,loop_amen_full,loop_garzul,loop_mika,loop_breakbeat,loop_safari,loop_tabla,loop_3d_printer,loop_drone_g_97,loop_electric,loop_mehackit1,loop_mehackit2,loop_perc1,loop_perc2,loop_weirdo,tabla_tas1,tabla_tas2,tabla_tas3,tabla_ke1,tabla_ke2,tabla_ke3,tabla_na,tabla_na_o,tabla_tun1,tabla_tun2,tabla_tun3,tabla_te1,tabla_te2,tabla_te_ne,tabla_te_m,tabla_ghe1,tabla_ghe2,tabla_ghe3,tabla_ghe4,tabla_ghe5,tabla_ghe6,tabla_ghe7,tabla_ghe8,tabla_dhec,tabla_na_s,tabla_re,vinyl_backspin,vinyl_rewind,vinyl_scratch,vinyl_hiss|}"
   }
 }

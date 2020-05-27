@@ -81,11 +81,25 @@ export class Main {
     
     oscSender: OscSender;
 
+    serverStarted: boolean;
+
+    platform: string;
+
     constructor(){
         // FIXME: these 2 should not be hardcoded. For now, make sure that they are set to the correct values for your system
-        this.rootPath = "C:/Program Files/Sonic Pi";    
-        this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby.exe";
-
+        this.platform = os.platform();
+        if (this.platform === 'win32'){
+            this.rootPath = "C:/Program Files/Sonic Pi";    
+            this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby.exe";
+        }
+        else if (this.platform === 'darwin'){
+            this.rootPath = "/Applications/Sonic Pi.app/Contents/Resources";    
+            this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
+        }
+        else{
+            this.rootPath = "/home/user/sonic-pi";
+            this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
+        }
 
         this.rubyServerPath = this.rootPath + "/app/server/ruby/bin/sonic-pi-server.rb";
         this.portDiscoveryPath = this.rootPath + "/app/server/ruby/bin/port-discovery.rb";
@@ -120,8 +134,7 @@ export class Main {
     
         this.oscSender = new OscSender();
 
-        this.setupOscReceiver();
-    
+        this.setupOscReceiver();    
 
         // attempt to create log directory
         if (!fs.existsSync(this.logPath)){
@@ -132,10 +145,48 @@ export class Main {
         this.logOutput = vscode.window.createOutputChannel('Log');
         this.cuesOutput.show();
         this.logOutput.show();
+
+        this.serverStarted = false;
+
+        // watch to see if the user opens a ruby or custom file and we need to start the server
+        vscode.window.onDidChangeVisibleTextEditors((editors) => {            
+            let launchAuto = vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerAutomatically;
+            for (let i = 0; i < editors.length; i++){
+                if ((launchAuto === 'ruby' || !launchAuto) && editors[i].document.languageId === 'ruby' && !this.serverStarted) {
+                    this.startServer();
+                    break;
+                }
+                if (launchAuto === 'custom'){
+                    let customExtension =  vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerCustomExtension;
+                    if (!customExtension){
+                        vscode.window.showErrorMessage("Launch is set to custom, but custom extension is empty.",
+                            "Enter custom extension").then(
+                                item => { if (item) {vscode.window.showInputBox().then(
+                                    ext =>{ vscode.workspace.getConfiguration('sonicpieditor').update('launchSonicPiServerCustomExtension', ext, true); }
+                                );} });
+                    }
+                    else if (editors[i].document.fileName.endsWith(customExtension) && !this.serverStarted) {
+                        this.startServer();
+                        break;
+                    }
+                }
+            }            
+        });
     }
 
     sonicPiHomePath(){
         return os.homedir();
+    }
+
+    startServer(){
+        if (!this.serverStarted){
+           	// Initialise the Sonic Pi server
+        	vscode.window.setStatusBarMessage("Starting Sonic Pi server");
+	        vscode.window.showInformationMessage("Starting Sonic Pi server");
+            this.initAndCheckPorts();
+            this.startRubyServer();    
+            this.serverStarted = true;
+        }
     }
 
     log(str: string){

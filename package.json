@@ -11,11 +11,16 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onLanguage:ruby"
+		"*"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
+			{
+				"command": "sonicpieditor.startserver",
+				"title": "Start Server",
+				"category": "Sonic Pi"
+			},
 			{
 				"command": "sonicpieditor.run",
 				"title": "Run",
@@ -42,7 +47,7 @@
 		"keybindings": [
 			{
 				"command": "sonicpieditor.run",
-				"key": "alt+r",				
+				"key": "alt+r",
 				"mac": "cmd+r",
 				"when": "editorTextFocus"
 			},
@@ -66,6 +71,26 @@
 		"configuration": {
 			"title": "Sonic Pi",
 			"properties": {
+				"sonicpieditor.launchSonicPiServerAutomatically": {
+					"type": "string",
+					"enum": [
+						"ruby",
+						"start",
+						"never",
+						"custom"
+					],
+					"enumDescriptions": [
+						"Start the server when there is a ruby file open in the editor",
+						"Start the server when starting vscode",
+						"Do not start the server automatically (must launch it manually through the Sonic Pi: Start Server command)",
+						"Start the server when opening a custom file extension - enter in the Launch Sonic Pi Server Custom Extension setting"
+					],
+					"description": "Launch Sonic Pi Server automatically when..."
+				},
+				"sonicpieditor.launchSonicPiServerCustomExtension": {
+					"type": "string",
+					"description": "If the Launch server automatically setting is set to custom, what extension triggers the launch?"
+				},
 				"sonicpieditor.invertStereo": {
 					"type": "boolean",
 					"default": false,

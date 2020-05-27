@@ -40,18 +40,21 @@ export function activate(context: vscode.ExtensionContext) {
 	// create an uuid for the editor
 	let guiUuid = uuidv4();
 
-	// Initialise the Sonic Pi server
-	vscode.window.setStatusBarMessage("Starting Sonic Pi server");
-	vscode.window.showInformationMessage("Starting Sonic Pi server");
 	let main = new Main();
-	main.initAndCheckPorts();
-	main.startRubyServer();
+	let config = vscode.workspace.getConfiguration('sonicpieditor');
+	if (config.launchSonicPiServerAutomatically === 'always'){
+		main.startServer();
+	}
 
 	let isRecording = false;
 	
 	// Register the editor commands. For now, run, stop and recording. Those should be enough for
 	// some initial fun...
-	let disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {		
+	let disposable = vscode.commands.registerCommand('sonicpieditor.startserver', () => {		
+		main.startServer();
+	});
+
+	disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {		
 		let doc = textEditor.document;
 		// If the focus is on something that is not ruby (i.e. something on the output pane), 
 		// run the first found open ruby editor instead
