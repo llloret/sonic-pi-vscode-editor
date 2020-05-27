@@ -227,12 +227,32 @@ export class Main {
             this.processMultiMessage(message);            
         });
 
-/*        osc.on('*', (message: {address: string}) => {
-            console.log("Got message of type: " + message.address);
+        osc.on('/syntax_error', (message: { args: any;}) => {
+            console.log("Got /syntax_error" + message.args[0] + ", " + message.args[1] +  ", " +
+            message.args[2] + ", " + message.args[3]  + ", " + message.args[4]);
+            this.processSyntaxError(message);
+        });
+
+/*        osc.on('/error', (message: any) => {
+            console.log("Got /syntax_error");
+            this.processError(message);
         });
 */
+        osc.on('*', (message: {address: string}) => {
+            console.log("Got message of type: " + message.address);
+        });
+
     }
       
+    processSyntaxError(message: {args: any }){
+        let job_id = message.args[0];
+        let desc = message.args[1];
+        let error_line = message.args[2];
+        let line = message.args[3];
+        let line_num_s = message.args[4];
+
+        vscode.window.showErrorMessage('Syntax error: ' + desc + '\nLine ' + line + ': ' + error_line);
+    }
     // Process an incoming multi-message
     processMultiMessage(message: {args: any }){
         let job_id = message.args[0];
