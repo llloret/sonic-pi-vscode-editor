@@ -33,6 +33,7 @@ export class OscSender {
         });
 		this.osc.open();
     }
+    ksdjfksadjf
 
     send(msg: any){
         this.osc.send(msg);
