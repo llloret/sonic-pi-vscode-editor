@@ -132,10 +132,6 @@ export class Main {
         this.oscMidiInPort = -1;
         this.websocketPort = -1;
     
-        this.oscSender = new OscSender();
-
-        this.setupOscReceiver();    
-
         // attempt to create log directory
         if (!fs.existsSync(this.logPath)){
             fs.mkdirSync(this.logPath);
@@ -147,6 +143,8 @@ export class Main {
         this.logOutput.show();
 
         this.serverStarted = false;
+
+        this.oscSender = new OscSender();
 
         // watch to see if the user opens a ruby or custom file and we need to start the server
         vscode.window.onDidChangeVisibleTextEditors((editors) => {            
@@ -183,8 +181,9 @@ export class Main {
                // Initialise the Sonic Pi server
             vscode.window.setStatusBarMessage("Starting Sonic Pi server");
             vscode.window.showInformationMessage("Starting Sonic Pi server");
-            this.initAndCheckPorts();
-            this.startRubyServer();    
+            this.initAndCheckPorts();            
+            this.setupOscReceiver();    
+            this.startRubyServer();
             this.serverStarted = true;
         }
     }
@@ -208,7 +207,7 @@ export class Main {
     // This is where the incoming OSC messages are processed
     setupOscReceiver(){
         let osc = new OSC({
-            plugin: new OSC.DatagramPlugin({ open: { port: 51236, host: '127.0.0.1' } })
+            plugin: new OSC.DatagramPlugin({ open: { port: this.guiListenToServerPort, host: '127.0.0.1' } })
         });
         osc.open();
         osc.on('/log/info', (message: { args: any; }) => {
@@ -238,10 +237,10 @@ export class Main {
             this.processError(message);
         });
 */
-        osc.on('*', (message: {address: string}) => {
+/*        osc.on('*', (message: {address: string}) => {
             console.log("Got message of type: " + message.address);
         });
-
+*/
     }
       
     processSyntaxError(message: {args: any }){
