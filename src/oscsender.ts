@@ -36,5 +36,5 @@ export class OscSender {
 
     send(msg: any){
         this.osc.send(msg);
-    }    
+    }
 }
