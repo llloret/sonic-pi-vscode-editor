@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     let main = new Main();
     let config = vscode.workspace.getConfiguration('sonicpieditor');
-    if (config.launchSonicPiServerAutomatically === 'always'){
+    if (config.launchSonicPiServerAutomatically === 'start'){
         main.startServer();
     }
 
