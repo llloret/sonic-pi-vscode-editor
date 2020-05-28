@@ -14,6 +14,10 @@
         "curly": "warn",
         "eqeqeq": "warn",
         "no-throw-literal": "warn",
+        "indent": ["error", 4, {"ignoreComments": true}],
+        "no-mixed-spaces-and-tabs": "error",
+        "no-trailing-spaces": "error",
+        "no-unused-vars": "warn",
         "semi": "off"
     }
 }
