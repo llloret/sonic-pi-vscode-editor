@@ -20,15 +20,18 @@ This is just starting, but we already have enough features to have some fun!
     - ruby: launches the server when there is a ruby file visible in vscode (this is the default)
     - custom: launches the server when there is a file with your given custom extension visible in vscode
     - never: do not launch the server automatically (use the Sonic Pi: Start Server command)
+- Configurable Sonic Pi root path, in case the default does not work for you
 - Can run code pressing Alt-R (or Cmd-R on Mac, just like in Sonic Pi's editor) or with command palette "Sonic Pi: Run" (see [Screenshot](image/command-palette.png))
 - Can stop running audio with Alt-S (or Cmd-S on Mac) or "Sonic Pi: Stop"
+- Can run the selected code with Alt-T (or Cmd-T on Mac). If there is no code selected, it will offer to run the whole file instead (and persist the choice)
 - Shows logs and cues in the output panel (see [logs](image/output-pane.png) and [cues](image/output-pane-cues.png))
-- Some snippets like live_loop, effects, synths, samples, and possibly more coming soon. See the snippets directory for the full list, and contribute new ones if you feel like it!
-    - fx -> instantiate effect with automcomplete list chooser
+- Some snippets like live_loop, effects, synths, samples, and possibly more coming soon. See the snippets directory for the full list and contribute new ones if you feel like it!
+    - fx -> instantiate effect with autocomplete list chooser
     - fx x (where x is a letter) -> effect instantiation
     - us -> instantiate synth with autocomplete list chooser
     - us x (where x is a letter) -> specific synth instantiation
-    - sa -> instantiate sample with automcomplete list chooser
+    - sa -> instantiate sample with autocomplete list chooser
+- Highlight errors as reported by the Sonic Pi server
 - And of course, you have syntax highlighting, autoformatting, all the goodies that you usually have with vscode!
 
 * See a very short video of Robin Newman's arrangement of "Pase El Agua" launched from this extension, showing
@@ -48,8 +51,9 @@ The extension runs in development mode. Follow these steps:
 
 If you run into problems, let me know, and I'll do my best to help you set this up.
 
-**Make sure you configure the paths in main.ts (rootPath and rubypath) to match your own system.** This will
-be automated or offer better configuration / platform dependent defaults in the future.
+**Make sure you configure the Sonic Pi root path in the configuration if the default setting does not work for you**
+Open Settings -> Extensions -> Sonic Pi -> Sonic Pi Root Directory
+
 
 ## Known Issues
 

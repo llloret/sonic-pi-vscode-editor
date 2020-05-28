@@ -24,21 +24,16 @@
 // what you have in tab 9 on your Sonic Pi session. This should be smarter in the future, and
 // I think there are plans to make this more flexible on Sonic Pi's side
 
-// At the moment this has been tested on Windows... my Linux VM with Linux Mint refuses to 
+// At the moment this has been tested on Windows... my Linux VM with Linux Mint refuses to
 // start Supercollider. Something to do with jackd and pulseaudio. Will investigate later.
 // It would be great if someone can check if it works in Linux, and provide a PR if it doesn't.
 
 import * as vscode from 'vscode';
-const { v4: uuidv4 } = require('uuid');
-const OSC = require('osc-js');
 
 import { Main } from './main';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Ruby detected. Sonic Pi editor extension active!');
-
-    // create an uuid for the editor
-    let guiUuid = uuidv4();
 
     let main = new Main();
     let config = vscode.workspace.getConfiguration('sonicpieditor');
@@ -47,16 +42,16 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     let isRecording = false;
-    
+
     // Register the editor commands. For now, run, stop and recording. Those should be enough for
     // some initial fun...
-    let disposable = vscode.commands.registerCommand('sonicpieditor.startserver', () => {		
+    let disposable = vscode.commands.registerCommand('sonicpieditor.startserver', () => {
         main.startServer();
     });
 
-    disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {		
+    disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {
         let doc = textEditor.document;
-        // If the focus is on something that is not ruby (i.e. something on the output pane), 
+        // If the focus is on something that is not ruby (i.e. something on the output pane),
         // run the first found open ruby editor instead
         if (doc.languageId !== 'ruby'){
             let textEditors = vscode.window.visibleTextEditors;
@@ -64,38 +59,86 @@ export function activate(context: vscode.ExtensionContext) {
                 return editor.document.languageId === 'ruby';
             });
 
+            // TODO: if no ruby editors, show a warning to indicate that this will not have effect
             if (!rubyEditors.length){
                 return;
             }
             doc = rubyEditors[0].document;
         }
         let code = doc.getText();
-        var message = new OSC.Message('/run-code', guiUuid, code);
-        main.sendOsc(message);
+        main.sendRunCode(code);
     });
 
+
+    disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.runselected', (textEditor) => {
+        let doc = textEditor.document;
+        // If the focus is on something that is not ruby (i.e. something on the output pane),
+        // run the first found open ruby editor instead
+        if (doc.languageId !== 'ruby'){
+            let textEditors = vscode.window.visibleTextEditors;
+            let rubyEditors = textEditors.filter((editor) => {
+                return editor.document.languageId === 'ruby';
+            });
+
+            // TODO: if no ruby editors, show a warning to indicate that this will not have effect
+            if (!rubyEditors.length){
+                return;
+            }
+            doc = rubyEditors[0].document;
+        }
+        let code = doc.getText(textEditor.selection);
+        if (!code){
+            let runFileWhenRunSelectedIsEmpty =  vscode.workspace.getConfiguration('sonicpieditor').runFileWhenRunSelectedIsEmpty;
+            if (!runFileWhenRunSelectedIsEmpty){
+                vscode.window.showWarningMessage('You tried to Run selected code with no code selected.' +
+                'Do you want to run the whole file when this happens?', 'Yes, once', 'Yes, always', 'No, never').then(
+                    item => {
+                        if (item === 'Yes, once'){
+                            code = doc.getText();
+                            main.sendRunCode(code);
+                        }
+                        else if (item === 'Yes, always'){
+                            vscode.workspace.getConfiguration('sonicpieditor').update('runFileWhenRunSelectedIsEmpty', 'always', true);
+                            code = doc.getText();
+                            main.sendRunCode(code);
+                        }
+                        else if (item === 'No, never'){
+                            vscode.workspace.getConfiguration('sonicpieditor').update('runFileWhenRunSelectedIsEmpty', 'never', true);
+                        }
+                    }
+                );
+                return;
+            }
+            else if (runFileWhenRunSelectedIsEmpty === 'never'){
+                return;
+            }
+            else if (runFileWhenRunSelectedIsEmpty === 'always'){
+                code = doc.getText();
+                main.sendRunCode(code);
+            }
+
+        }
+        main.sendRunCode(code);
+    });
+
+
     disposable = vscode.commands.registerCommand('sonicpieditor.stop', () => {
-        var message = new OSC.Message('/stop-all-jobs', guiUuid);
-        main.sendOsc(message);
+        main.sendStopAllJobs();
     });
 
     disposable = vscode.commands.registerCommand('sonicpieditor.togglerecording', () => {
         isRecording = !isRecording;
         if (isRecording){
-            var message = new OSC.Message('/start-recording', guiUuid);
-            main.sendOsc(message);
+            main.sendStartRecording();
         }
         else{
-            var message = new OSC.Message('/stop-recording', guiUuid);
-            main.sendOsc(message);
+            main.sendStopRecording();
             vscode.window.showSaveDialog({filters: {'Wave file': ['wav']}}).then(uri => {
                 if (uri){
-                    var message = new OSC.Message('/save-recording', guiUuid, uri.fsPath);
-                    main.sendOsc(message);            
+                    main.sendSaveRecording(uri.fsPath);
                 }
                 else{
-                    var message = new OSC.Message('/delete-recording', guiUuid);
-                    main.sendOsc(message);            
+                    main.sendDeleteRecording();
                 }
             });
         }

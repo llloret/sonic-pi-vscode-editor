@@ -1,8 +1,7 @@
 A list of things that would be nice to have
-- Add setting to change Sonic Pi's root path if the default does not work
 - Sonic Pi help
+- Better diagnostics in case the server does not start
 - Colorize output panel (log and cues), if possible
 - Syntax highlight synths and FX
-- Show useful feedback when there is an error (/syntax osc message)
 - I18n
 

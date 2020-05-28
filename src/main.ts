@@ -20,26 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Important!!
-// At the moment some paths are hardcoded below, please make sure that this.rootPath is
-// the directory where Sonic Pi is installed, and that this.rubyPath points to where ruby is located,
-// or just "ruby" in Linux
-
-// We are processing some of the incoming OSC messages, but not everything yet. See setupOscReceiver() below
-// for the ones we are doing.
-
-// We are showing logs and cues in the Output panel, select the "logs" or "cues" on the dropdown. Is there a way to show
-// both of them? Do we want to?
-
 import * as vscode from 'vscode';
 import { TextDecoder } from 'util';
-import { IncomingHttpStatusHeader } from 'http2';
-const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const child_process = require('child_process');
 import { OscSender } from './oscsender';
 const OSC = require('osc-js');
+const { v4: uuidv4 } = require('uuid');
 
 
 export class Main {
@@ -75,30 +63,41 @@ export class Main {
     oscMidiOutPort: number;
     oscMidiInPort: number;
     websocketPort: number;
-  
+
     logOutput: vscode.OutputChannel;
     cuesOutput: vscode.OutputChannel;
-    
+
     oscSender: OscSender;
 
     serverStarted: boolean;
 
     platform: string;
+    guiUuid: any;
+
+    errorHighlightDecorationType = vscode.window.createTextEditorDecorationType({
+        border: '2px solid red'
+    });
+
 
     constructor(){
-        // FIXME: these 2 should not be hardcoded. For now, make sure that they are set to the correct values for your system
+        // Set up path defaults based on platform
         this.platform = os.platform();
         if (this.platform === 'win32'){
-            this.rootPath = "C:/Program Files/Sonic Pi";    
+            this.rootPath = "C:/Program Files/Sonic Pi";
             this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby.exe";
         }
         else if (this.platform === 'darwin'){
-            this.rootPath = "/Applications/Sonic Pi.app/Contents/Resources";    
+            this.rootPath = "/Applications/Sonic Pi.app/Contents/Resources";
             this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
         }
         else{
             this.rootPath = "/home/user/sonic-pi";
             this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
+        }
+
+        // Override default root path if found in settings
+        if (vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory){
+            this.rootPath = vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory;
         }
 
         this.rubyServerPath = this.rootPath + "/app/server/ruby/bin/sonic-pi-server.rb";
@@ -131,13 +130,13 @@ export class Main {
         this.oscMidiOutPort = -1;
         this.oscMidiInPort = -1;
         this.websocketPort = -1;
-    
+
         // attempt to create log directory
         if (!fs.existsSync(this.logPath)){
             fs.mkdirSync(this.logPath);
         }
 
-        this.cuesOutput = vscode.window.createOutputChannel('Cues');	
+        this.cuesOutput = vscode.window.createOutputChannel('Cues');
         this.logOutput = vscode.window.createOutputChannel('Log');
         this.cuesOutput.show();
         this.logOutput.show();
@@ -146,29 +145,39 @@ export class Main {
 
         this.oscSender = new OscSender();
 
+        // create an uuid for the editor
+        this.guiUuid = uuidv4();
+
         // watch to see if the user opens a ruby or custom file and we need to start the server
-        vscode.window.onDidChangeVisibleTextEditors((editors) => {            
+        vscode.window.onDidChangeVisibleTextEditors((editors) => {
             let launchAuto = vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerAutomatically;
             for (let i = 0; i < editors.length; i++){
-                if ((launchAuto === 'ruby' || !launchAuto) && editors[i].document.languageId === 'ruby' && !this.serverStarted) {
+                if (launchAuto === 'ruby' && editors[i].document.languageId === 'ruby' && !this.serverStarted) {
                     this.startServer();
                     break;
                 }
                 if (launchAuto === 'custom'){
-                    let customExtension =  vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerCustomExtension;
+                    let customExtension = vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerCustomExtension;
                     if (!customExtension){
                         vscode.window.showErrorMessage("Launch is set to custom, but custom extension is empty.",
                             "Enter custom extension").then(
-                                item => { if (item) {vscode.window.showInputBox().then(
-                                    ext =>{ vscode.workspace.getConfiguration('sonicpieditor').update('launchSonicPiServerCustomExtension', ext, true); }
-                                );} });
+                            item => { if (item) {vscode.window.showInputBox().then(
+                                ext =>{ vscode.workspace.getConfiguration('sonicpieditor').update('launchSonicPiServerCustomExtension', ext, true); }
+                            );} });
                     }
                     else if (editors[i].document.fileName.endsWith(customExtension) && !this.serverStarted) {
                         this.startServer();
                         break;
                     }
                 }
-            }            
+            }
+        });
+
+        // Update the mixer on the server if there are configuration changes
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration('sonicpieditor')){
+                this.updateMixerSettings();
+            }
         });
     }
 
@@ -178,33 +187,26 @@ export class Main {
 
     startServer(){
         if (!this.serverStarted){
-               // Initialise the Sonic Pi server
+            // Initialise the Sonic Pi server
             vscode.window.setStatusBarMessage("Starting Sonic Pi server");
             vscode.window.showInformationMessage("Starting Sonic Pi server");
-            this.initAndCheckPorts();            
-            this.setupOscReceiver();    
+            this.initAndCheckPorts();
+            this.setupOscReceiver();
             this.startRubyServer();
             this.serverStarted = true;
         }
     }
 
     log(str: string){
-        this.logOutput.appendLine(str);        
+        this.logOutput.appendLine(str);
     }
 
-    ab2str(buf: Uint8Array) {
-        if (!buf){
-            return "";
-        }
-        let str = new TextDecoder().decode(buf);
-        return str;
-    }
 
-    sendOsc(message: any){
-        this.oscSender.send(message);
-    }
 
-    // This is where the incoming OSC messages are processed
+
+
+    // This is where the incoming OSC messages are processed.
+    // We are processing most of the incoming OSC messages, but not everything yet.
     setupOscReceiver(){
         let osc = new OSC({
             plugin: new OSC.DatagramPlugin({ open: { port: this.guiListenToServerPort, host: '127.0.0.1' } })
@@ -223,7 +225,7 @@ export class Main {
 
         osc.on('/log/multi_message', (message: any) => {
             console.log("Got /log/multi_message");
-            this.processMultiMessage(message);            
+            this.processMultiMessage(message);
         });
 
         osc.on('/syntax_error', (message: { args: any;}) => {
@@ -232,26 +234,58 @@ export class Main {
             this.processSyntaxError(message);
         });
 
-/*        osc.on('/error', (message: any) => {
-            console.log("Got /syntax_error");
+        osc.on('/error', (message: any) => {
+            console.log("Got /error");
             this.processError(message);
         });
-*/
+
 /*        osc.on('*', (message: {address: string}) => {
             console.log("Got message of type: " + message.address);
         });
 */
     }
-      
+
+    // Show information about the syntax error to the user
     processSyntaxError(message: {args: any }){
         let job_id = message.args[0];
         let desc = message.args[1];
         let error_line = message.args[2];
         let line = message.args[3];
-        let line_num_s = message.args[4];
 
-        vscode.window.showErrorMessage('Syntax error: ' + desc + '\nLine ' + line + ': ' + error_line);
+        vscode.window.showErrorMessage('Syntax error on job ' + job_id + ': ' + desc + '\nLine ' + line + ': ' + error_line, 'Goto error').then(
+            item => { if (item) {
+                let errorHighlight: vscode.DecorationOptions[] = [];
+                let editor = vscode.window.activeTextEditor!;
+                let range = editor.document.lineAt(line-1).range;
+                editor.selection = new vscode.Selection(range.start, range.end);
+                editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+                errorHighlight.push({range});
+                editor.setDecorations(this.errorHighlightDecorationType, errorHighlight);
+            }}
+        );
     }
+
+    // Show information about the error to the user
+    processError(message: {args: any }){
+        let job_id = message.args[0];
+        let desc = message.args[1];
+        let backtrace = message.args[2];
+        let line = message.args[3];
+
+        vscode.window.showErrorMessage('Error on job ' + job_id + ': ' + desc + '\nLine ' + line + ': ' + backtrace, 'Goto error').then(
+            item => { if (item) {
+                let errorHighlight: vscode.DecorationOptions[] = [];
+                let editor = vscode.window.activeTextEditor!;
+                let range = editor.document.lineAt(line-1).range;
+                editor.selection = new vscode.Selection(range.start, range.end);
+                editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+                errorHighlight.push({range});
+                editor.setDecorations(this.errorHighlightDecorationType, errorHighlight);
+            }}
+        );
+    }
+
+
     // Process an incoming multi-message
     processMultiMessage(message: {args: any }){
         let job_id = message.args[0];
@@ -268,7 +302,7 @@ export class Main {
 
         toShow = "";
         for (let i = 0; i < count; i++){
-            let type = message.args[4 + (2*i)];
+            //let type = message.args[4 + (2*i)];
             let str = message.args[4 + 1 + (2*i)];
             let lines = str.split(/\r?\n/);
             if (!str){
@@ -298,14 +332,14 @@ export class Main {
         // Discover the port numbers
         let port_map = new Map<string, number>();
         this.log("[GUI] - Discovering port numbers...");
-    
+
         let determinePortNumbers = child_process.spawnSync(this.rubyPath, [this.portDiscoveryPath]);
-        determinePortNumbers.output.forEach((item: any) => {            
-            let itemStr = this.ab2str(item);
+        determinePortNumbers.output.forEach((item: any) => {
+            let itemStr = this.ua82str(item);
             let port_strings = itemStr.split(/\r?\n/);
             port_strings.forEach((port_string) => {
                 let tokens = port_string.split(':');
-                port_map.set(tokens[0], +tokens[1]);    
+                port_map.set(tokens[0], +tokens[1]);
             });
         });
 
@@ -321,7 +355,7 @@ export class Main {
         this.oscMidiInPort          = port_map.get("osc-midi-in")!;
         this.websocketPort            = port_map.get("websocket")!;
 
-        // FIXME: for now, we assume all ports are available. 
+        // FIXME: for now, we assume all ports are available.
         /*
         bool glts_available = checkPort(gui_listen_to_server_port);
         bool sltg_available = checkPort(server_listen_to_gui_port);
@@ -339,20 +373,20 @@ export class Main {
             std::cout << "[GUI] - Critical Error. One or more ports is not available." << std::endl;
             startupError("One or more ports is not available. Is Sonic Pi already running? If not, please reboot your machine and try again.");
             return false;
-    
+
         } else {
             std::cout << "[GUI] - All ports OK" << std::endl;
             return true;
         }
- */   
+ */
     }
 
     // This is the main part of launching Sonic Pi's backend
     startRubyServer(){
-        let args = ["--enable-frozen-string-literal", "-E", "utf-8", this.rubyServerPath, "-u", 
-                this.serverListenToGuiPort, this.serverSendToHuiPort, this.scsynthPort,
-                this.scsynthSendPort, this.serverOscCuesPort, this.erlangRouterPort,
-                this.oscMidiOutPort, this.oscMidiInPort, this.websocketPort];
+        let args = ["--enable-frozen-string-literal", "-E", "utf-8", this.rubyServerPath, "-u",
+            this.serverListenToGuiPort, this.serverSendToHuiPort, this.scsynthPort,
+            this.scsynthSendPort, this.serverOscCuesPort, this.erlangRouterPort,
+            this.oscMidiOutPort, this.oscMidiInPort, this.websocketPort];
 
         let ruby_server = child_process.spawn(this.rubyPath, args);
         ruby_server.stdout.on('data', (data: any) => {
@@ -361,12 +395,105 @@ export class Main {
             if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)){
                 vscode.window.setStatusBarMessage("Sonic Pi server started");
                 vscode.window.showInformationMessage("Sonic Pi server started");
+                this.updateMixerSettings();
             }
+        });
 
-          });
-          
-          ruby_server.stderr.on('data', (data: any) => {
+        ruby_server.stderr.on('data', (data: any) => {
             this.log(`stderr: ${data}`);
-          });
-    }    
+        });
+    }
+
+    updateMixerSettings(){
+        let invert_stereo = vscode.workspace.getConfiguration('sonicpieditor').invertStereo;
+        let force_mono = vscode.workspace.getConfiguration('sonicpieditor').forceMono;
+        if (invert_stereo) {
+            this.sendMixerInvertStereo();
+        } else {
+            this.sendMixerStandardStereo();
+        }
+
+        if (force_mono) {
+            this.sendMixerMonoMode();
+        } else {
+            this.sendMixerStereoMode();
+        }
+    }
+
+    sendOsc(message: any){
+        this.oscSender.send(message);
+    }
+
+    sendRunCode(code: string){
+        if (vscode.workspace.getConfiguration('sonicpieditor').logClearOnRun){
+            this.logOutput.clear();
+        }
+        if (vscode.workspace.getConfiguration('sonicpieditor').safeMode){
+            code = "use_arg_checks true #__nosave__ set by Qt GUI user preferences.\n" + code ;
+        }
+        this.clearErrorHighlight();
+        let message = new OSC.Message('/run-code', this.guiUuid, code);
+        this.sendOsc(message);
+    }
+
+    sendStopAllJobs(){
+        var message = new OSC.Message('/stop-all-jobs', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendStartRecording(){
+        let message = new OSC.Message('/start-recording', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendStopRecording(){
+        let message = new OSC.Message('/stop-recording', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendSaveRecording(path: string){
+        let message = new OSC.Message('/save-recording', this.guiUuid, path);
+        this.sendOsc(message);
+    }
+
+    sendDeleteRecording(){
+        let message = new OSC.Message('/delete-recording', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendMixerInvertStereo(){
+        let message = new OSC.Message('/mixer-invert-stereo', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendMixerStandardStereo(){
+        let message = new OSC.Message('/mixer-standard-stereo', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendMixerMonoMode(){
+        let message = new OSC.Message('/mixer-mono-mode', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    sendMixerStereoMode(){
+        let message = new OSC.Message('/mixer-stereo-mode', this.guiUuid);
+        this.sendOsc(message);
+    }
+
+    // Remove the error highlight
+    clearErrorHighlight(){
+        vscode.window.activeTextEditor?.setDecorations(this.errorHighlightDecorationType, []);
+    }
+
+    // Convert a uint array to a string
+    ua82str(buf: Uint8Array): string {
+        if (!buf){
+            return "";
+        }
+        let str = new TextDecoder().decode(buf);
+        return str;
+    }
+
+
 }
