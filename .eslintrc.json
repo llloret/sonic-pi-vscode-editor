@@ -16,7 +16,7 @@
         "no-throw-literal": "warn",
         "indent": ["error", 4, {"ignoreComments": true}],
         "no-mixed-spaces-and-tabs": "error",
-        "no-trailing-spaces": "error",
+        "no-trailing-spaces": ["error", {"skipBlankLines": true}],
         "no-unused-vars": "warn",
         "semi": "off"
     }

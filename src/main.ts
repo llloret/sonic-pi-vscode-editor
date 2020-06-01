@@ -74,6 +74,8 @@ export class Main {
     platform: string;
     guiUuid: any;
 
+    runOffset: number;
+
     errorHighlightDecorationType = vscode.window.createTextEditorDecorationType({
         border: '2px solid red'
     });
@@ -92,13 +94,16 @@ export class Main {
         }
         else{
             this.rootPath = "/home/user/sonic-pi";
-            this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
+            this.rubyPath = "ruby";
         }
 
         // Override default root path if found in settings
         if (vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory){
             this.rootPath = vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory;
         }
+
+        console.log('Using Sonic Pi root directory: ' + this.rootPath);
+        console.log('Using ruby: ' + this.rubyPath);
 
         this.rubyServerPath = this.rootPath + "/app/server/ruby/bin/sonic-pi-server.rb";
         this.portDiscoveryPath = this.rootPath + "/app/server/ruby/bin/port-discovery.rb";
@@ -131,6 +136,8 @@ export class Main {
         this.oscMidiInPort = -1;
         this.websocketPort = -1;
 
+        this.runOffset = 0;
+
         // attempt to create log directory
         if (!fs.existsSync(this.logPath)){
             fs.mkdirSync(this.logPath);
@@ -160,10 +167,10 @@ export class Main {
                     let customExtension = vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerCustomExtension;
                     if (!customExtension){
                         vscode.window.showErrorMessage("Launch is set to custom, but custom extension is empty.",
-                            "Enter custom extension").then(
-                            item => { if (item) {vscode.window.showInputBox().then(
-                                ext =>{ vscode.workspace.getConfiguration('sonicpieditor').update('launchSonicPiServerCustomExtension', ext, true); }
-                            );} });
+                            "Go to settings").then(
+                            item => { if (item) {
+                                vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.launchSonicPiServerCustomExtension');
+                            }});
                     }
                     else if (editors[i].document.fileName.endsWith(customExtension) && !this.serverStarted) {
                         this.startServer();
@@ -179,6 +186,16 @@ export class Main {
                 this.updateMixerSettings();
             }
         });
+    }
+
+    checkSonicPiPath() {
+        if (!fs.existsSync(this.rubyServerPath)){
+            vscode.window.showErrorMessage("The Sonic Pi root path is not properly configured.",
+                "Go to settings").then(
+                item => { if (item) {
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.sonicPiRootDirectory');
+                }});
+        }
     }
 
     sonicPiHomePath(){
@@ -201,9 +218,9 @@ export class Main {
         this.logOutput.appendLine(str);
     }
 
-
-
-
+    cueLog(str: string){
+        this.cuesOutput.appendLine(str);
+    }
 
     // This is where the incoming OSC messages are processed.
     // We are processing most of the incoming OSC messages, but not everything yet.
@@ -214,13 +231,13 @@ export class Main {
         osc.open();
         osc.on('/log/info', (message: { args: any; }) => {
             console.log("Got /log/info" + " -> " + message.args[0] + ", " + message.args[1]);
-            this.logOutput.appendLine(message.args[1]);
+            this.log(message.args[1]);
         });
 
         osc.on('/incoming/osc', (message: { args: any; }) => {
             console.log("Got /incoming/osc" + " -> " + message.args[0] + ", " + message.args[1] + ", " +
                 message.args[2] + ", " + message.args[3]);
-            this.cuesOutput.appendLine(message.args[2] + ": " + message.args[3]);
+            this.cueLog(message.args[2] + ": " + message.args[3]);
         });
 
         osc.on('/log/multi_message', (message: any) => {
@@ -250,13 +267,13 @@ export class Main {
         let job_id = message.args[0];
         let desc = message.args[1];
         let error_line = message.args[2];
-        let line = message.args[3];
+        let line = message.args[3] + this.runOffset;
 
         vscode.window.showErrorMessage('Syntax error on job ' + job_id + ': ' + desc + '\nLine ' + line + ': ' + error_line, 'Goto error').then(
             item => { if (item) {
                 let errorHighlight: vscode.DecorationOptions[] = [];
                 let editor = vscode.window.activeTextEditor!;
-                let range = editor.document.lineAt(line-1).range;
+                let range = editor.document.lineAt(line - 1).range;
                 editor.selection = new vscode.Selection(range.start, range.end);
                 editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
                 errorHighlight.push({range});
@@ -270,7 +287,7 @@ export class Main {
         let job_id = message.args[0];
         let desc = message.args[1];
         let backtrace = message.args[2];
-        let line = message.args[3];
+        let line = message.args[3] + this.runOffset;
 
         vscode.window.showErrorMessage('Error on job ' + job_id + ': ' + desc + '\nLine ' + line + ': ' + backtrace, 'Goto error').then(
             item => { if (item) {
@@ -400,6 +417,7 @@ export class Main {
         });
 
         ruby_server.stderr.on('data', (data: any) => {
+            console.log(`stderr: ${data}`);
             this.log(`stderr: ${data}`);
         });
     }
@@ -408,15 +426,15 @@ export class Main {
         let invert_stereo = vscode.workspace.getConfiguration('sonicpieditor').invertStereo;
         let force_mono = vscode.workspace.getConfiguration('sonicpieditor').forceMono;
         if (invert_stereo) {
-            this.sendMixerInvertStereo();
+            this.mixerInvertStereo();
         } else {
-            this.sendMixerStandardStereo();
+            this.mixerStandardStereo();
         }
 
         if (force_mono) {
-            this.sendMixerMonoMode();
+            this.mixerMonoMode();
         } else {
-            this.sendMixerStereoMode();
+            this.mixerStereoMode();
         }
     }
 
@@ -424,7 +442,10 @@ export class Main {
         this.oscSender.send(message);
     }
 
-    sendRunCode(code: string){
+    runCode(code: string, offset: number = 0){
+        // The offset represents the line number of the selection, so we can apply it when we just send a
+        // selection to Sonic Pi. If we send the full buffer, then this is 0.
+        this.runOffset = offset;
         if (vscode.workspace.getConfiguration('sonicpieditor').logClearOnRun){
             this.logOutput.clear();
         }
@@ -436,47 +457,47 @@ export class Main {
         this.sendOsc(message);
     }
 
-    sendStopAllJobs(){
+    stopAllJobs(){
         var message = new OSC.Message('/stop-all-jobs', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendStartRecording(){
+    startRecording(){
         let message = new OSC.Message('/start-recording', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendStopRecording(){
+    stopRecording(){
         let message = new OSC.Message('/stop-recording', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendSaveRecording(path: string){
+    saveRecording(path: string){
         let message = new OSC.Message('/save-recording', this.guiUuid, path);
         this.sendOsc(message);
     }
 
-    sendDeleteRecording(){
+    deleteRecording(){
         let message = new OSC.Message('/delete-recording', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendMixerInvertStereo(){
+    mixerInvertStereo(){
         let message = new OSC.Message('/mixer-invert-stereo', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendMixerStandardStereo(){
+    mixerStandardStereo(){
         let message = new OSC.Message('/mixer-standard-stereo', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendMixerMonoMode(){
+    mixerMonoMode(){
         let message = new OSC.Message('/mixer-mono-mode', this.guiUuid);
         this.sendOsc(message);
     }
 
-    sendMixerStereoMode(){
+    mixerStereoMode(){
         let message = new OSC.Message('/mixer-stereo-mode', this.guiUuid);
         this.sendOsc(message);
     }

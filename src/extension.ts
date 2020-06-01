@@ -36,6 +36,9 @@ export function activate(context: vscode.ExtensionContext) {
     console.log('Ruby detected. Sonic Pi editor extension active!');
 
     let main = new Main();
+
+    main.checkSonicPiPath();
+
     let config = vscode.workspace.getConfiguration('sonicpieditor');
     if (config.launchSonicPiServerAutomatically === 'start'){
         main.startServer();
@@ -66,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
             doc = rubyEditors[0].document;
         }
         let code = doc.getText();
-        main.sendRunCode(code);
+        main.runCode(code);
     });
 
 
@@ -95,12 +98,12 @@ export function activate(context: vscode.ExtensionContext) {
                     item => {
                         if (item === 'Yes, once'){
                             code = doc.getText();
-                            main.sendRunCode(code);
+                            main.runCode(code);
                         }
                         else if (item === 'Yes, always'){
                             vscode.workspace.getConfiguration('sonicpieditor').update('runFileWhenRunSelectedIsEmpty', 'always', true);
                             code = doc.getText();
-                            main.sendRunCode(code);
+                            main.runCode(code);
                         }
                         else if (item === 'No, never'){
                             vscode.workspace.getConfiguration('sonicpieditor').update('runFileWhenRunSelectedIsEmpty', 'never', true);
@@ -114,31 +117,31 @@ export function activate(context: vscode.ExtensionContext) {
             }
             else if (runFileWhenRunSelectedIsEmpty === 'always'){
                 code = doc.getText();
-                main.sendRunCode(code);
+                main.runCode(code);
             }
 
         }
-        main.sendRunCode(code);
+        main.runCode(code, textEditor.selection.start.line);
     });
 
 
     disposable = vscode.commands.registerCommand('sonicpieditor.stop', () => {
-        main.sendStopAllJobs();
+        main.stopAllJobs();
     });
 
     disposable = vscode.commands.registerCommand('sonicpieditor.togglerecording', () => {
         isRecording = !isRecording;
         if (isRecording){
-            main.sendStartRecording();
+            main.startRecording();
         }
         else{
-            main.sendStopRecording();
+            main.stopRecording();
             vscode.window.showSaveDialog({filters: {'Wave file': ['wav']}}).then(uri => {
                 if (uri){
-                    main.sendSaveRecording(uri.fsPath);
+                    main.saveRecording(uri.fsPath);
                 }
                 else{
-                    main.sendDeleteRecording();
+                    main.deleteRecording();
                 }
             });
         }
