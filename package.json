@@ -32,6 +32,11 @@
 				"category": "Sonic Pi"
 			},
 			{
+				"command": "sonicpieditor.livereload",
+				"title": "Toggle Live-Reload (Run on Save)",
+				"category": "Sonic Pi"
+			},
+			{
 				"command": "sonicpieditor.stop",
 				"title": "Stop",
 				"category": "Sonic Pi"
