@@ -105,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
                 'Do you want to run the whole file when this happens?', 'Yes, once', 'Yes, always', 'No, never').then(
                     item => {
                         if (item === 'Yes, once'){
-                            code = doc!.getText();
+                            code = doc.getText();
                             main.runCode(code);
                         }
                         else if (item === 'Yes, always'){
