@@ -101,6 +101,10 @@ export class Main {
         if (vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory){
             this.rootPath = vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory;
         }
+        
+        if (vscode.workspace.getConfiguration('ruby.interpreter').commandPath){
+            this.rubyPath = vscode.workspace.getConfiguration('ruby.interpreter').commandPath;
+        }
 
         console.log('Using Sonic Pi root directory: ' + this.rootPath);
         console.log('Using ruby: ' + this.rubyPath);
