@@ -144,7 +144,7 @@ export class Main {
 
         // attempt to create log directory
         if (!fs.existsSync(this.logPath)){
-            fs.mkdirSync(this.logPath);
+            fs.mkdirSync(this.logPath, { recursive: true });
         }
 
         this.cuesOutput = vscode.window.createOutputChannel('Cues');
