@@ -30,6 +30,7 @@ const OSC = require('osc-js');
 const utf8 = require('utf8');
 const { v4: uuidv4 } = require('uuid');
 import { Config } from './config';
+import { Range, TextEditor, window } from 'vscode';
 
 
 export class Main {
@@ -466,7 +467,27 @@ export class Main {
         this.sendOsc(message);
     }
 
-    stopAllJobs(){
+    flashCode(editor: TextEditor, isWhole: boolean) {
+        const range = isWhole ? this.getWholeRange(editor) : this.getSelectedRange(editor);
+        const flashDecorationType = window.createTextEditorDecorationType({
+            backgroundColor: this.config.flashBackgroundColor(),
+            color: this.config.flashTextColor()
+        });
+        editor.setDecorations(flashDecorationType, [range]);
+        setTimeout(function () {
+            flashDecorationType.dispose();
+        }, 250);
+    }
+    private getWholeRange(editor: TextEditor): Range {
+        let startPos = editor.document.positionAt(0);
+        let endPos = editor.document.positionAt(editor.document.getText().length - 1);
+        return new Range(startPos, endPos);
+    }
+    private getSelectedRange(editor: TextEditor): Range {
+        return new Range(editor.selection.anchor, editor.selection.active);
+    }
+
+    stopAllJobs() {
         var message = new OSC.Message('/stop-all-jobs', this.guiUuid);
         this.sendOsc(message);
     }

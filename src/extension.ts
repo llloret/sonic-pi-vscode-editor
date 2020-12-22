@@ -70,6 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
             doc = rubyEditors[0].document;
         }
         let code = doc.getText();
+        main.flashCode(textEditor, true);
         main.runCode(code);
     });
 
@@ -99,11 +100,13 @@ export function activate(context: vscode.ExtensionContext) {
                     item => {
                         if (item === 'Yes, once'){
                             code = doc.getText();
+                            main.flashCode(textEditor, true);
                             main.runCode(code);
                         }
                         else if (item === 'Yes, always'){
                             config.updateRunFileWhenRunSelectedIsEmpty('always');
                             code = doc.getText();
+                            main.flashCode(textEditor, true);
                             main.runCode(code);
                         }
                         else if (item === 'No, never'){
@@ -118,10 +121,12 @@ export function activate(context: vscode.ExtensionContext) {
             }
             else if (runFileWhenRunSelectedIsEmpty === 'always'){
                 code = doc.getText();
+                main.flashCode(textEditor, true);
                 main.runCode(code);
             }
 
         }
+        main.flashCode(textEditor, false);
         main.runCode(code, textEditor.selection.start.line);
     });
 
