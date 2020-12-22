@@ -85,7 +85,6 @@
 				"sonicpieditor.sonicPiRootDirectory": {
 					"type": "string",
 					"description": "Set Sonic Pi installation directory.\nOnly use this if the default does not work for you."
-
 				},
 				"sonicpieditor.launchSonicPiServerAutomatically": {
 					"type": "string",
@@ -167,6 +166,7 @@
 	},
 	"dependencies": {
 		"osc-js": "2.1.0",
+		"utf8": "^3.0.0",
 		"uuid": "8.1.0"
 	}
 }

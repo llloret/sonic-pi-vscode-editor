@@ -27,6 +27,7 @@ const os = require('os');
 const child_process = require('child_process');
 import { OscSender } from './oscsender';
 const OSC = require('osc-js');
+const utf8 = require('utf8');
 const { v4: uuidv4 } = require('uuid');
 
 
@@ -456,6 +457,7 @@ export class Main {
         if (vscode.workspace.getConfiguration('sonicpieditor').safeMode){
             code = "use_arg_checks true #__nosave__ set by Qt GUI user preferences.\n" + code ;
         }
+        code = utf8.encode(code);
         this.clearErrorHighlight();
         let message = new OSC.Message('/run-code', this.guiUuid, code);
         this.sendOsc(message);
