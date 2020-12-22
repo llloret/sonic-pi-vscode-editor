@@ -29,6 +29,7 @@ import { OscSender } from './oscsender';
 const OSC = require('osc-js');
 const utf8 = require('utf8');
 const { v4: uuidv4 } = require('uuid');
+import { Config } from './config';
 
 
 export class Main {
@@ -74,6 +75,7 @@ export class Main {
 
     platform: string;
     guiUuid: any;
+    config: any;
 
     runOffset: number;
 
@@ -97,14 +99,15 @@ export class Main {
             this.rootPath = "/home/user/sonic-pi";
             this.rubyPath = "ruby";
         }
+        this.config = new Config();
 
         // Override default root path if found in settings
-        if (vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory){
-            this.rootPath = vscode.workspace.getConfiguration('sonicpieditor').sonicPiRootDirectory;
+        if (this.config.sonicPiRootDirectory()){
+            this.rootPath = this.config.sonicPiRootDirectory();
         }
         
-        if (vscode.workspace.getConfiguration('ruby.interpreter').commandPath){
-            this.rubyPath = vscode.workspace.getConfiguration('ruby.interpreter').commandPath;
+        if (this.config.commandPath()){
+            this.rubyPath = this.config.commandPath();
         }
 
         console.log('Using Sonic Pi root directory: ' + this.rootPath);
@@ -162,14 +165,14 @@ export class Main {
 
         // watch to see if the user opens a ruby or custom file and we need to start the server
         vscode.window.onDidChangeVisibleTextEditors((editors) => {
-            let launchAuto = vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerAutomatically;
+            let launchAuto = this.config.launchSonicPiServerAutomatically();
             for (let i = 0; i < editors.length; i++){
                 if (launchAuto === 'ruby' && editors[i].document.languageId === 'ruby' && !this.serverStarted) {
                     this.startServer();
                     break;
                 }
                 if (launchAuto === 'custom'){
-                    let customExtension = vscode.workspace.getConfiguration('sonicpieditor').launchSonicPiServerCustomExtension;
+                    let customExtension = this.config.launchSonicPiServerCustomExtension();
                     if (!customExtension){
                         vscode.window.showErrorMessage("Launch is set to custom, but custom extension is empty.",
                             "Go to settings").then(
@@ -428,8 +431,8 @@ export class Main {
     }
 
     updateMixerSettings(){
-        let invert_stereo = vscode.workspace.getConfiguration('sonicpieditor').invertStereo;
-        let force_mono = vscode.workspace.getConfiguration('sonicpieditor').forceMono;
+        let invert_stereo = this.config.invertStereo();
+        let force_mono = this.config.forceMono();
         if (invert_stereo) {
             this.mixerInvertStereo();
         } else {
@@ -451,10 +454,10 @@ export class Main {
         // The offset represents the line number of the selection, so we can apply it when we just send a
         // selection to Sonic Pi. If we send the full buffer, then this is 0.
         this.runOffset = offset;
-        if (vscode.workspace.getConfiguration('sonicpieditor').logClearOnRun){
+        if (this.config.logClearOnRun()){
             this.logOutput.clear();
         }
-        if (vscode.workspace.getConfiguration('sonicpieditor').safeMode){
+        if (this.config.safeMode()){
             code = "use_arg_checks true #__nosave__ set by Qt GUI user preferences.\n" + code ;
         }
         code = utf8.encode(code);

@@ -31,6 +31,7 @@
 import * as vscode from 'vscode';
 
 import { Main } from './main';
+import { Config } from './config';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Ruby detected. Sonic Pi editor extension active!');
@@ -39,8 +40,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     main.checkSonicPiPath();
 
-    let config = vscode.workspace.getConfiguration('sonicpieditor');
-    if (config.launchSonicPiServerAutomatically === 'start'){
+    let config = new Config();
+    if (config.launchSonicPiServerAutomatically() === 'start'){
         main.startServer();
     }
 
@@ -91,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         let code = doc.getText(textEditor.selection);
         if (!code){
-            let runFileWhenRunSelectedIsEmpty =  vscode.workspace.getConfiguration('sonicpieditor').runFileWhenRunSelectedIsEmpty;
+            let runFileWhenRunSelectedIsEmpty =  config.runFileWhenRunSelectedIsEmpty();
             if (!runFileWhenRunSelectedIsEmpty){
                 vscode.window.showWarningMessage('You tried to Run selected code with no code selected.' +
                 'Do you want to run the whole file when this happens?', 'Yes, once', 'Yes, always', 'No, never').then(
@@ -101,12 +102,12 @@ export function activate(context: vscode.ExtensionContext) {
                             main.runCode(code);
                         }
                         else if (item === 'Yes, always'){
-                            vscode.workspace.getConfiguration('sonicpieditor').update('runFileWhenRunSelectedIsEmpty', 'always', true);
+                            config.updateRunFileWhenRunSelectedIsEmpty('always');
                             code = doc.getText();
                             main.runCode(code);
                         }
                         else if (item === 'No, never'){
-                            vscode.workspace.getConfiguration('sonicpieditor').update('runFileWhenRunSelectedIsEmpty', 'never', true);
+                            config.updateRunFileWhenRunSelectedIsEmpty('never');
                         }
                     }
                 );
