@@ -29,8 +29,40 @@
 // It would be great if someone can check if it works in Linux, and provide a PR if it doesn't.
 
 import * as vscode from 'vscode';
-
 import { Main } from './main';
+
+type Maybe<T> = T | null;
+
+/**
+ * Attempts to find the first open Ruby document, returns null if not found
+ */
+function tryGetFirstRubyDocument(): Maybe<vscode.TextDocument> {
+    let textEditors = vscode.window.visibleTextEditors;
+    let rubyEditors = textEditors.filter((editor) => {
+        return editor.document.languageId === 'ruby';
+    });
+    if (!rubyEditors.length){
+        vscode.window.showWarningMessage('No open Ruby editors were found, attempting to run Sonic Pi code will have no effect. Please open a Ruby file and try again.');
+        return null;
+    }
+    return rubyEditors[0].document;
+}
+
+/**
+ * Runs the code from a TextEditor document
+ *
+ * @param main the instance of the Main class, used for context to keep this function out of the module body scope
+ * @param textEditor an instance of a TextEditor from a registerTextEditorCommand callback
+ */
+function runTextEditorCode(main: Main, textEditor: vscode.TextEditor) {
+    let doc = textEditor.document;
+    if (doc.languageId !== 'ruby') {
+        let maybeRubyDoc = tryGetFirstRubyDocument();
+        if (maybeRubyDoc) { main.runCode(maybeRubyDoc.getText()); }
+    } else {
+        main.runCode(doc.getText());
+    }
+}
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Ruby detected. Sonic Pi editor extension active!');
@@ -53,45 +85,21 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.run', (textEditor) => {
-        let doc = textEditor.document;
-        // If the focus is on something that is not ruby (i.e. something on the output pane),
-        // run the first found open ruby editor instead
-        if (doc.languageId !== 'ruby'){
-            let textEditors = vscode.window.visibleTextEditors;
-            let rubyEditors = textEditors.filter((editor) => {
-                return editor.document.languageId === 'ruby';
-            });
-
-            // TODO: if no ruby editors, show a warning to indicate that this will not have effect
-            if (!rubyEditors.length){
-                return;
-            }
-            doc = rubyEditors[0].document;
-        }
-        let code = doc.getText();
-        main.runCode(code);
+        runTextEditorCode(main, textEditor);
     });
 
 
     disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.runselected', (textEditor) => {
-        let doc = textEditor.document;
         // If the focus is on something that is not ruby (i.e. something on the output pane),
-        // run the first found open ruby editor instead
-        if (doc.languageId !== 'ruby'){
-            let textEditors = vscode.window.visibleTextEditors;
-            let rubyEditors = textEditors.filter((editor) => {
-                return editor.document.languageId === 'ruby';
-            });
-
-            // TODO: if no ruby editors, show a warning to indicate that this will not have effect
-            if (!rubyEditors.length){
-                return;
-            }
-            doc = rubyEditors[0].document;
+        let doc = textEditor.document;
+        if (doc.languageId !== 'ruby') {
+            let maybeRubyDoc = tryGetFirstRubyDocument();
+            if (maybeRubyDoc) { doc = maybeRubyDoc; }
         }
+        // run the first found open ruby editor instead
         let code = doc.getText(textEditor.selection);
-        if (!code){
-            let runFileWhenRunSelectedIsEmpty =  vscode.workspace.getConfiguration('sonicpieditor').runFileWhenRunSelectedIsEmpty;
+        if (!code) {
+            let runFileWhenRunSelectedIsEmpty = vscode.workspace.getConfiguration('sonicpieditor').runFileWhenRunSelectedIsEmpty;
             if (!runFileWhenRunSelectedIsEmpty){
                 vscode.window.showWarningMessage('You tried to Run selected code with no code selected.' +
                 'Do you want to run the whole file when this happens?', 'Yes, once', 'Yes, always', 'No, never').then(
@@ -144,6 +152,33 @@ export function activate(context: vscode.ExtensionContext) {
                     main.deleteRecording();
                 }
             });
+        }
+    });
+
+    let liveReload = false;
+    let onSaveSubscription: vscode.Disposable;
+
+    disposable = vscode.commands.registerTextEditorCommand('sonicpieditor.livereload', (textEditor) => {
+        liveReload = !liveReload;
+        // If enabling
+        if (liveReload) {
+            // Initially run the code
+            runTextEditorCode(main, textEditor);
+            // Then set up the on-save subscription
+            onSaveSubscription = vscode.workspace.onDidSaveTextDocument((doc) => {
+                if (doc.languageId === 'ruby') { main.runCode(doc.getText()); }
+            });
+            // Display notifications
+            vscode.window.setStatusBarMessage("Sonic Pi [Live-Reload]");
+            vscode.window.showInformationMessage("Sonic Pi Live-Reload Enabled");
+        }
+        // If disabling
+        else {
+            // Dispose of the on-save subscription
+            onSaveSubscription.dispose();
+            // Display notifications
+            vscode.window.showInformationMessage("Sonic Pi Live-Reload Disabled");
+            vscode.window.setStatusBarMessage("Sonic Pi server started");
         }
     });
 
