@@ -6,6 +6,12 @@ export class Config {
     private rubySection: string = 'ruby.interpreter';
 
     // sonic-pi's config
+    public flashBackgroundColor(): string {
+        return this.getConfiguration(this.section).flashBackgroundColor;
+    }
+    public flashTextColor(): string {
+        return this.getConfiguration(this.section).flashTextColor;
+    }
     public launchSonicPiServerAutomatically(): string {
         return this.getConfiguration(this.section).launchSonicPiServerAutomatically;
     }

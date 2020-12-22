@@ -139,6 +139,16 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Clear the log when executing a run"
+				},
+				"sonicpieditor.flashBackgroundColor": {
+					"type": "string",
+					"default": "rgba(255,20,147,1.0)",
+					"description": "Background flash color when running code"
+				},
+				"sonicpieditor.flashTextColor": {
+					"type": "string",
+					"default": "rgba(255,255,255,1.0)",
+					"description": "Text flash color when running code"
 				}
 			}
 		}
