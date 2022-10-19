@@ -85,29 +85,29 @@ export class Main {
     });
 
 
-    constructor(){
+    constructor() {
         // Set up path defaults based on platform
         this.platform = os.platform();
-        if (this.platform === 'win32'){
+        if (this.platform === 'win32') {
             this.rootPath = "C:/Program Files/Sonic Pi";
             this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby.exe";
         }
-        else if (this.platform === 'darwin'){
+        else if (this.platform === 'darwin') {
             this.rootPath = "/Applications/Sonic Pi.app/Contents/Resources";
             this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
         }
-        else{
+        else {
             this.rootPath = "/home/user/sonic-pi";
             this.rubyPath = "ruby";
         }
         this.config = new Config();
 
         // Override default root path if found in settings
-        if (this.config.sonicPiRootDirectory()){
+        if (this.config.sonicPiRootDirectory()) {
             this.rootPath = this.config.sonicPiRootDirectory();
         }
-        
-        if (this.config.commandPath()){
+
+        if (this.config.commandPath()) {
             this.rubyPath = this.config.commandPath();
         }
 
@@ -148,7 +148,7 @@ export class Main {
         this.runOffset = 0;
 
         // attempt to create log directory
-        if (!fs.existsSync(this.logPath)){
+        if (!fs.existsSync(this.logPath)) {
             fs.mkdirSync(this.logPath, { recursive: true });
         }
 
@@ -167,19 +167,21 @@ export class Main {
         // watch to see if the user opens a ruby or custom file and we need to start the server
         vscode.window.onDidChangeVisibleTextEditors((editors) => {
             let launchAuto = this.config.launchSonicPiServerAutomatically();
-            for (let i = 0; i < editors.length; i++){
+            for (let i = 0; i < editors.length; i++) {
                 if (launchAuto === 'ruby' && editors[i].document.languageId === 'ruby' && !this.serverStarted) {
                     this.startServer();
                     break;
                 }
-                if (launchAuto === 'custom'){
+                if (launchAuto === 'custom') {
                     let customExtension = this.config.launchSonicPiServerCustomExtension();
-                    if (!customExtension){
+                    if (!customExtension) {
                         vscode.window.showErrorMessage("Launch is set to custom, but custom extension is empty.",
                             "Go to settings").then(
-                            item => { if (item) {
-                                vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.launchSonicPiServerCustomExtension');
-                            }});
+                                item => {
+                                    if (item) {
+                                        vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.launchSonicPiServerCustomExtension');
+                                    }
+                                });
                     }
                     else if (editors[i].document.fileName.endsWith(customExtension) && !this.serverStarted) {
                         this.startServer();
@@ -191,28 +193,30 @@ export class Main {
 
         // Update the mixer on the server if there are configuration changes
         vscode.workspace.onDidChangeConfiguration((event) => {
-            if (event.affectsConfiguration('sonicpieditor')){
+            if (event.affectsConfiguration('sonicpieditor')) {
                 this.updateMixerSettings();
             }
         });
     }
 
     checkSonicPiPath() {
-        if (!fs.existsSync(this.rubyServerPath)){
+        if (!fs.existsSync(this.rubyServerPath)) {
             vscode.window.showErrorMessage("The Sonic Pi root path is not properly configured.",
                 "Go to settings").then(
-                item => { if (item) {
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.sonicPiRootDirectory');
-                }});
+                    item => {
+                        if (item) {
+                            vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.sonicPiRootDirectory');
+                        }
+                    });
         }
     }
 
-    sonicPiHomePath(){
+    sonicPiHomePath() {
         return os.homedir();
     }
 
-    startServer(){
-        if (!this.serverStarted){
+    startServer() {
+        if (!this.serverStarted) {
             // Initialise the Sonic Pi server
             vscode.window.setStatusBarMessage("Starting Sonic Pi server");
             vscode.window.showInformationMessage("Starting Sonic Pi server");
@@ -223,17 +227,17 @@ export class Main {
         }
     }
 
-    log(str: string){
+    log(str: string) {
         this.logOutput.appendLine(str);
     }
 
-    cueLog(str: string){
+    cueLog(str: string) {
         this.cuesOutput.appendLine(str);
     }
 
     // This is where the incoming OSC messages are processed.
     // We are processing most of the incoming OSC messages, but not everything yet.
-    setupOscReceiver(){
+    setupOscReceiver() {
         let osc = new OSC({
             plugin: new OSC.DatagramPlugin({ open: { port: this.guiListenToServerPort, host: '127.0.0.1' } })
         });
@@ -254,9 +258,9 @@ export class Main {
             this.processMultiMessage(message);
         });
 
-        osc.on('/syntax_error', (message: { args: any;}) => {
-            console.log("Got /syntax_error" + message.args[0] + ", " + message.args[1] +  ", " +
-            message.args[2] + ", " + message.args[3]  + ", " + message.args[4]);
+        osc.on('/syntax_error', (message: { args: any; }) => {
+            console.log("Got /syntax_error" + message.args[0] + ", " + message.args[1] + ", " +
+                message.args[2] + ", " + message.args[3] + ", " + message.args[4]);
             this.processSyntaxError(message);
         });
 
@@ -265,79 +269,83 @@ export class Main {
             this.processError(message);
         });
 
-/*        osc.on('*', (message: {address: string}) => {
-            console.log("Got message of type: " + message.address);
-        });
-*/
+        /*        osc.on('*', (message: {address: string}) => {
+                    console.log("Got message of type: " + message.address);
+                });
+        */
     }
 
     // Show information about the syntax error to the user
-    processSyntaxError(message: {args: any }){
+    processSyntaxError(message: { args: any }) {
         let job_id = message.args[0];
         let desc = message.args[1];
         let error_line = message.args[2];
         let line = message.args[3] + this.runOffset;
 
         vscode.window.showErrorMessage('Syntax error on job ' + job_id + ': ' + desc + '\nLine ' + line + ': ' + error_line, 'Goto error').then(
-            item => { if (item) {
-                let errorHighlight: vscode.DecorationOptions[] = [];
-                let editor = vscode.window.activeTextEditor!;
-                let range = editor.document.lineAt(line - 1).range;
-                editor.selection = new vscode.Selection(range.start, range.end);
-                editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-                errorHighlight.push({range});
-                editor.setDecorations(this.errorHighlightDecorationType, errorHighlight);
-            }}
+            item => {
+                if (item) {
+                    let errorHighlight: vscode.DecorationOptions[] = [];
+                    let editor = vscode.window.activeTextEditor!;
+                    let range = editor.document.lineAt(line - 1).range;
+                    editor.selection = new vscode.Selection(range.start, range.end);
+                    editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+                    errorHighlight.push({ range });
+                    editor.setDecorations(this.errorHighlightDecorationType, errorHighlight);
+                }
+            }
         );
     }
 
     // Show information about the error to the user
-    processError(message: {args: any }){
+    processError(message: { args: any }) {
         let job_id = message.args[0];
         let desc = message.args[1];
         let backtrace = message.args[2];
         let line = message.args[3] + this.runOffset;
 
         vscode.window.showErrorMessage('Error on job ' + job_id + ': ' + desc + '\nLine ' + line + ': ' + backtrace, 'Goto error').then(
-            item => { if (item) {
-                let errorHighlight: vscode.DecorationOptions[] = [];
-                let editor = vscode.window.activeTextEditor!;
-                let range = editor.document.lineAt(line-1).range;
-                editor.selection = new vscode.Selection(range.start, range.end);
-                editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
-                errorHighlight.push({range});
-                editor.setDecorations(this.errorHighlightDecorationType, errorHighlight);
-            }}
+            item => {
+                if (item) {
+                    let errorHighlight: vscode.DecorationOptions[] = [];
+                    let editor = vscode.window.activeTextEditor!;
+                    let range = editor.document.lineAt(line - 1).range;
+                    editor.selection = new vscode.Selection(range.start, range.end);
+                    editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+                    errorHighlight.push({ range });
+                    editor.setDecorations(this.errorHighlightDecorationType, errorHighlight);
+                }
+            }
         );
     }
 
 
     // Process an incoming multi-message
-    processMultiMessage(message: {args: any }){
+    processMultiMessage(message: { args: any }) {
         let job_id = message.args[0];
         let thread_name = message.args[1];
         let runtime = message.args[2];
         let count = message.args[3];
 
         let toShow = "{run: " + job_id + ", time: " + runtime;
-        if (thread_name){
+        if (thread_name) {
             toShow += ", thread: " + thread_name;
         }
         toShow += "}";
         this.logOutput.appendLine(toShow);
 
         toShow = "";
-        for (let i = 0; i < count; i++){
+        for (let i = 0; i < count; i++) {
             //let type = message.args[4 + (2*i)];
-            let str = message.args[4 + 1 + (2*i)];
+            let str = message.args[4 + 1 + (2 * i)];
             let lines = str.split(/\r?\n/);
-            if (!str){
+            if (!str) {
                 toShow = " |";
             }
-            else if (i === (count - 1)){
+            else if (i === (count - 1)) {
                 toShow = " └─ ";
             }
-            else{
+            else {
                 toShow = " ├─ ";
             }
             this.logOutput.append(toShow);
@@ -369,17 +377,17 @@ export class Main {
             });
         });
 
-        this.guiSendToServerPort   = port_map.get("gui-send-to-server")!;
-        this.guiListenToServerPort = port_map.get("gui-listen-to-server")!;
-        this.serverListenToGuiPort = port_map.get("server-listen-to-gui")!;
+        this.guiSendToServerPort    = port_map.get("gui-send-to-server")!;
+        this.guiListenToServerPort  = port_map.get("gui-listen-to-server")!;
+        this.serverListenToGuiPort  = port_map.get("server-listen-to-gui")!;
         this.serverOscCuesPort      = port_map.get("server-osc-cues")!;
-        this.serverSendToHuiPort   = port_map.get("server-send-to-gui")!;
-        this.scsynthPort              = port_map.get("scsynth")!;
-        this.scsynthSendPort         = port_map.get("scsynth-send")!;
-        this.erlangRouterPort        = port_map.get("erlang-router")!;
+        this.serverSendToHuiPort    = port_map.get("server-send-to-gui")!;
+        this.scsynthPort            = port_map.get("scsynth")!;
+        this.scsynthSendPort        = port_map.get("scsynth-send")!;
+        this.erlangRouterPort       = port_map.get("erlang-router")!;
         this.oscMidiOutPort         = port_map.get("osc-midi-out")!;
         this.oscMidiInPort          = port_map.get("osc-midi-in")!;
-        this.websocketPort            = port_map.get("websocket")!;
+        this.websocketPort          = port_map.get("websocket")!;
 
         // FIXME: for now, we assume all ports are available.
         /*
@@ -408,7 +416,7 @@ export class Main {
     }
 
     // This is the main part of launching Sonic Pi's backend
-    startRubyServer(){
+    startRubyServer() {
         let args = ["--enable-frozen-string-literal", "-E", "utf-8", this.rubyServerPath, "-u",
             this.serverListenToGuiPort, this.serverSendToHuiPort, this.scsynthPort,
             this.scsynthSendPort, this.serverOscCuesPort, this.erlangRouterPort,
@@ -418,7 +426,7 @@ export class Main {
         ruby_server.stdout.on('data', (data: any) => {
             console.log(`stdout: ${data}`);
             this.log(`stdout: ${data}`);
-            if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)){
+            if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)) {
                 vscode.window.setStatusBarMessage("Sonic Pi server started");
                 vscode.window.showInformationMessage("Sonic Pi server started");
                 this.updateMixerSettings();
@@ -431,7 +439,7 @@ export class Main {
         });
     }
 
-    updateMixerSettings(){
+    updateMixerSettings() {
         let invert_stereo = this.config.invertStereo();
         let force_mono = this.config.forceMono();
         if (invert_stereo) {
@@ -447,19 +455,19 @@ export class Main {
         }
     }
 
-    sendOsc(message: any){
+    sendOsc(message: any) {
         this.oscSender.send(message);
     }
 
-    runCode(code: string, offset: number = 0){
+    runCode(code: string, offset: number = 0) {
         // The offset represents the line number of the selection, so we can apply it when we just send a
         // selection to Sonic Pi. If we send the full buffer, then this is 0.
         this.runOffset = offset;
-        if (this.config.logClearOnRun()){
+        if (this.config.logClearOnRun()) {
             this.logOutput.clear();
         }
-        if (this.config.safeMode()){
-            code = "use_arg_checks true #__nosave__ set by Qt GUI user preferences.\n" + code ;
+        if (this.config.safeMode()) {
+            code = "use_arg_checks true #__nosave__ set by Qt GUI user preferences.\n" + code;
         }
         code = utf8.encode(code);
         this.clearErrorHighlight();
@@ -492,54 +500,54 @@ export class Main {
         this.sendOsc(message);
     }
 
-    startRecording(){
+    startRecording() {
         let message = new OSC.Message('/start-recording', this.guiUuid);
         this.sendOsc(message);
     }
 
-    stopRecording(){
+    stopRecording() {
         let message = new OSC.Message('/stop-recording', this.guiUuid);
         this.sendOsc(message);
     }
 
-    saveRecording(path: string){
+    saveRecording(path: string) {
         let message = new OSC.Message('/save-recording', this.guiUuid, path);
         this.sendOsc(message);
     }
 
-    deleteRecording(){
+    deleteRecording() {
         let message = new OSC.Message('/delete-recording', this.guiUuid);
         this.sendOsc(message);
     }
 
-    mixerInvertStereo(){
+    mixerInvertStereo() {
         let message = new OSC.Message('/mixer-invert-stereo', this.guiUuid);
         this.sendOsc(message);
     }
 
-    mixerStandardStereo(){
+    mixerStandardStereo() {
         let message = new OSC.Message('/mixer-standard-stereo', this.guiUuid);
         this.sendOsc(message);
     }
 
-    mixerMonoMode(){
+    mixerMonoMode() {
         let message = new OSC.Message('/mixer-mono-mode', this.guiUuid);
         this.sendOsc(message);
     }
 
-    mixerStereoMode(){
+    mixerStereoMode() {
         let message = new OSC.Message('/mixer-stereo-mode', this.guiUuid);
         this.sendOsc(message);
     }
 
     // Remove the error highlight
-    clearErrorHighlight(){
+    clearErrorHighlight() {
         vscode.window.activeTextEditor?.setDecorations(this.errorHighlightDecorationType, []);
     }
 
     // Convert a uint array to a string
     ua82str(buf: Uint8Array): string {
-        if (!buf){
+        if (!buf) {
             return "";
         }
         let str = new TextDecoder().decode(buf);
