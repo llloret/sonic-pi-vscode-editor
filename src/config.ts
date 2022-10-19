@@ -21,6 +21,15 @@ export class Config {
     public sonicPiRootDirectory(): string {
         return this.getConfiguration(this.section).sonicPiRootDirectory;
     }
+    public relativeServerBin(): string {
+        return this.getConfiguration(this.section).relativeServerBin;
+    }
+    public relativeQtThemePath(): string {
+        return this.getConfiguration(this.section).relativeQtThemePath;
+    }
+    public relativeSamplesPath(): string {
+        return this.getConfiguration(this.section).relativeSamplesPath;
+    }
     public launchSonicPiServerCustomExtension(): string {
         return this.getConfiguration(this.section).launchSonicPiServerCustomExtension;
     }

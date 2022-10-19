@@ -24,12 +24,14 @@ import * as vscode from 'vscode';
 import { TextDecoder } from 'util';
 const fs = require('fs');
 const os = require('os');
+const path = require('path');
 const child_process = require('child_process');
 import { OscSender } from './oscsender';
 const OSC = require('osc-js');
 const utf8 = require('utf8');
 const { v4: uuidv4 } = require('uuid');
 import { Config } from './config';
+// eslint-disable-next-line no-unused-vars
 import { Range, TextEditor, window } from 'vscode';
 
 
@@ -37,19 +39,24 @@ export class Main {
     rootPath: string;
     rubyPath: string;
     rubyServerPath: string;
+
     portDiscoveryPath: string;
     fetchUrlPath: string;
     samplePath: string;
+
     spUserPath: string;
     spUserTmpPath: string;
+
     logPath: string;
     serverErrorLogPath: string;
     serverOutputLogPath: string;
     guiLogPath: string;
     processLogPath: string;
     scsynthLogPath: string;
+
     initScriptPath: string;
     exitScriptPath: string;
+
     qtAppThemePath: string;
     qtBrowserDarkCss: string;
     qtBrowserLightCss: string;
@@ -86,52 +93,90 @@ export class Main {
 
 
     constructor() {
-        // Set up path defaults based on platform
-        this.platform = os.platform();
-        if (this.platform === 'win32') {
-            this.rootPath = "C:/Program Files/Sonic Pi";
-            this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby.exe";
-        }
-        else if (this.platform === 'darwin') {
-            this.rootPath = "/Applications/Sonic Pi.app/Contents/Resources";
-            this.rubyPath = this.rootPath + "/app/server/native/ruby/bin/ruby";
-        }
-        else {
-            this.rootPath = "/home/user/sonic-pi";
-            this.rubyPath = "ruby";
-        }
         this.config = new Config();
 
-        // Override default root path if found in settings
-        if (this.config.sonicPiRootDirectory()) {
-            this.rootPath = this.config.sonicPiRootDirectory();
+        // Get platform
+        this.platform = os.platform();
+
+        // Determine root path, if it exists.
+        this.rootPath = this.config.sonicPiRootDirectory() || "";
+        if (!this.rootPath) {
+            switch (this.platform) {
+            case 'win32':   this.rootPath = "C:/Program Files/Sonic Pi";    break;
+            case 'darwin':  this.rootPath = "C:/Program Files/Sonic Pi";    break;
+            }
         }
 
-        if (this.config.commandPath()) {
-            this.rubyPath = this.config.commandPath();
+        // Determine ruby path based on root path, or just use the ruby on PATH.
+        this.rubyPath = this.config.commandPath() || "";
+        if (!this.rubyPath) {
+            switch (this.platform) {
+            case 'win32':   this.rubyPath = path.resolve(this.rootPath, "app/server/native/ruby/bin/ruby.exe"); break;
+            case 'darwin':  this.rubyPath = path.resolve(this.rootPath, "app/server/native/ruby/bin/ruby");     break;
+            default:        this.rubyPath = "ruby"; break;
+            }
         }
 
-        console.log('Using Sonic Pi root directory: ' + this.rootPath);
+        // Collect relative config paths
+        let relativeServerBin = this.config.relativeServerBin() || 'app/server/ruby/bin';
+        let relativeQtThemePath = this.config.relativeQtThemePath() || 'app/gui/qt/theme';
+        let relativeSamplesPath = this.config.relativeSamplesPath() || 'etc/samples';
+
+        if (!this.rootPath) {
+            // If root path is not defined, this is a special system. It's linux, and Sonic Pi could be in a variety of spots.
+
+            // Function to get the current linux distribution. Useful for anyone needing debian specific stuff
+
+            // e.g., this makes "distro" be the base distro of "debian", "arch", or others, instead of just "linux"
+            // let distro = ''
+            // if (this.platform == "linux") {
+            //     // Here, we loop over the os-release ini file and look for the line ID_LIKE='distro'
+            //     const releaseDetals = fs.readFileSync('/etc/os-release').toString().split("\n")
+            //     for (const detailLine of releaseDetals) {
+            //         const detail = detailLine.split("=");
+            //         if (detail[0].toLowerCase() == "id_like") {
+            //             // Once we find the line, the part after the = sign is the distro name
+            //             // Also trim non-alphanumeric characters just to be safe
+            //             distro = detail[1].replace(/\W+/g, '')
+            //         }
+            //     }
+            // }
+
+            // FIXME: Add more paths. These are the paths for an Arch Linux distribution.
+            relativeServerBin = '/usr/lib/sonic-pi/server/bin/';
+            relativeQtThemePath = '/usr/share/sonic-pi/theme/';
+            relativeSamplesPath = '/usr/share/sonic-pi/samples/';
+        }
+
+        // path.resolve() handles absolute paths fine. Think of it as cd-ing into the first folder, than into the next sequentially.
+        const serverBin = path.resolve(this.rootPath, relativeServerBin);
+        const qtThemePath = path.resolve(this.rootPath, relativeQtThemePath);
+        this.samplePath = path.resolve(this.rootPath, relativeSamplesPath);
+
+        console.log('Using Sonic Pi server bin: ' + serverBin);
         console.log('Using ruby: ' + this.rubyPath);
 
-        this.rubyServerPath = this.rootPath + "/app/server/ruby/bin/sonic-pi-server.rb";
-        this.portDiscoveryPath = this.rootPath + "/app/server/ruby/bin/port-discovery.rb";
-        this.fetchUrlPath = this.rootPath + "/app/server/ruby/bin/fetch-url.rb";
-        this.samplePath = this.rootPath + "/etc/samples";
-        this.spUserPath = this.sonicPiHomePath() + "/.sonic-pi";
-        this.spUserTmpPath = this.spUserPath + "/.writableTesterPath";
-        this.logPath = this.spUserPath + "/log";
-        this.serverErrorLogPath = this.logPath + "/server-errors.log";
-        this.serverOutputLogPath = this.logPath + "/server-output.log";
-        this.guiLogPath = this.logPath + "/gui.log";
-        this.processLogPath = this.logPath + "/processes.log";
-        this.scsynthLogPath = this.logPath + "/scsynth.log";
-        this.initScriptPath = this.rootPath + "/app/server/ruby/bin/init-script.rb";
-        this.exitScriptPath = this.rootPath + "/app/server/ruby/bin/exit-script.rb";
-        this.qtAppThemePath = this.rootPath + "/app/gui/qt/theme/app.qss";
-        this.qtBrowserDarkCss = this.rootPath + "/app/gui/qt/theme/dark/doc-styles.css";
-        this.qtBrowserLightCss = this.rootPath + "/app/gui/qt/theme/light/doc-styles.css";
-        this.qtBrowserHcCss = this.rootPath + "/app/gui/qt/theme/high_contrast/doc-styles.css";
+        this.rubyServerPath      = path.join(serverBin, "sonic-pi-server.rb");
+        this.portDiscoveryPath   = path.join(serverBin, "port-discovery.rb");
+        this.fetchUrlPath        = path.join(serverBin, "fetch-url.rb");
+
+        this.spUserPath          = path.join(this.sonicPiHomePath(), "/.sonic-pi");
+        this.spUserTmpPath       = path.join(this.spUserPath, "/.writableTesterPath");
+
+        this.logPath             = path.join(this.spUserPath, "/log");
+        this.serverErrorLogPath  = path.join(this.logPath, "server-errors.log");
+        this.serverOutputLogPath = path.join(this.logPath, "server-output.log");
+        this.guiLogPath          = path.join(this.logPath, "gui.log");
+        this.processLogPath      = path.join(this.logPath, "processes.log");
+        this.scsynthLogPath      = path.join(this.logPath, "scsynth.log");
+
+        this.initScriptPath      = path.join(serverBin, "init-script.rb");
+        this.exitScriptPath      = path.join(serverBin, "exit-script.rb");
+
+        this.qtAppThemePath      = path.join(qtThemePath, "app.qss");
+        this.qtBrowserDarkCss    = path.join(qtThemePath, "dark/doc-styles.css");
+        this.qtBrowserLightCss   = path.join(qtThemePath, "light/doc-styles.css");
+        this.qtBrowserHcCss      = path.join(qtThemePath, "high_contrast/doc-styles.css");
 
         this.guiSendToServerPort = -1;
         this.guiListenToServerPort = -1;
@@ -175,13 +220,14 @@ export class Main {
                 if (launchAuto === 'custom') {
                     let customExtension = this.config.launchSonicPiServerCustomExtension();
                     if (!customExtension) {
-                        vscode.window.showErrorMessage("Launch is set to custom, but custom extension is empty.",
-                            "Go to settings").then(
-                                item => {
-                                    if (item) {
-                                        vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.launchSonicPiServerCustomExtension');
-                                    }
-                                });
+                        vscode.window.showErrorMessage(
+                            "Launch is set to custom, but custom extension is empty.",
+                            "Go to settings"
+                        ).then( item => {
+                            if (item) {
+                                vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.launchSonicPiServerCustomExtension');
+                            }
+                        });
                     }
                     else if (editors[i].document.fileName.endsWith(customExtension) && !this.serverStarted) {
                         this.startServer();
@@ -201,13 +247,15 @@ export class Main {
 
     checkSonicPiPath() {
         if (!fs.existsSync(this.rubyServerPath)) {
-            vscode.window.showErrorMessage("The Sonic Pi root path is not properly configured.",
-                "Go to settings").then(
-                    item => {
-                        if (item) {
-                            vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.sonicPiRootDirectory');
-                        }
-                    });
+            vscode.window.showErrorMessage(
+                "The Sonic Pi root path is not properly configured.",
+                "Go to settings"
+            ).then( item => {
+                if (item) {
+                    // FIXME: should this in actuality be vscode-sonic-pi.sonicPiRootDirectory, or is that linux specific?
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'sonicpieditor.sonicPiRootDirectory');
+                }
+            });
         }
     }
 
