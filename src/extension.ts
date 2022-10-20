@@ -33,10 +33,12 @@ import * as vscode from 'vscode';
 import { Main } from './main';
 import { Config } from './config';
 
+let main: Main;
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('Ruby detected. Sonic Pi editor extension active!');
 
-    let main = new Main();
+    main = new Main();
 
     main.checkSonicPiPath();
 
@@ -157,4 +159,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+    main.stopServer();
+}
