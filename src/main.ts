@@ -105,7 +105,7 @@ export class Main {
         if (!this.rootPath) {
             switch (this.platform) {
             case 'win32':   this.rootPath = "C:/Program Files/Sonic Pi";    break;
-            case 'darwin':  this.rootPath = "C:/Program Files/Sonic Pi";    break;
+            case 'darwin':  this.rootPath = "/Applications/Sonic Pi.app/Contents/Resources";    break;
             }
         }
 
