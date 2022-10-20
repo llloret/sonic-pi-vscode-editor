@@ -33,6 +33,8 @@ const { v4: uuidv4 } = require('uuid');
 import { Config } from './config';
 // eslint-disable-next-line no-unused-vars
 import { Range, TextEditor, window } from 'vscode';
+// eslint-disable-next-line no-unused-vars
+import { ChildProcess } from 'child_process';
 
 
 export class Main {
@@ -78,7 +80,7 @@ export class Main {
     cuesOutput: vscode.OutputChannel;
 
     oscSender: OscSender;
-
+    rubyServer?: ChildProcess;
     serverStarted: boolean;
 
     platform: string;
@@ -272,6 +274,14 @@ export class Main {
             this.setupOscReceiver();
             this.startRubyServer();
             this.serverStarted = true;
+        }
+    }
+    stopServer() {
+        if (this.serverStarted) {
+            vscode.window.setStatusBarMessage("Stopping Sonic Pi server");
+            vscode.window.showInformationMessage("Stopping Sonic Pi server");
+            this.stopRubyServer();
+            this.serverStarted = false;
         }
     }
 
@@ -470,8 +480,8 @@ export class Main {
             this.scsynthSendPort, this.serverOscCuesPort, this.erlangRouterPort,
             this.oscMidiOutPort, this.oscMidiInPort, this.websocketPort];
 
-        let ruby_server = child_process.spawn(this.rubyPath, args);
-        ruby_server.stdout.on('data', (data: any) => {
+        this.rubyServer = child_process.spawn(this.rubyPath, args);
+        this.rubyServer?.stdout?.on('data', (data: any) => {
             console.log(`stdout: ${data}`);
             this.log(`stdout: ${data}`);
             if (data.toString().match(/.*Sonic Pi Server successfully booted.*/)) {
@@ -481,10 +491,13 @@ export class Main {
             }
         });
 
-        ruby_server.stderr.on('data', (data: any) => {
+        this.rubyServer?.stderr?.on('data', (data: any) => {
             console.log(`stderr: ${data}`);
             this.log(`stderr: ${data}`);
         });
+    }
+    stopRubyServer() {
+        this.rubyServer?.kill();
     }
 
     updateMixerSettings() {
